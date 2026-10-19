@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+<style>
+  .lancamento-custo .card { padding: 30px; }
+  .lancamento-custo .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px; align-items: end; }
+  .lancamento-custo .preview-columns {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 10px;
+  }
+  .lancamento-custo .preview-column {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .lancamento-custo .preview-column.destaque { background: #eef4ff; border-color: #b6d4fe; }
+  .lancamento-custo .preview-column-title {
+    color: #1a73e8;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding-bottom: 10px;
+    margin-bottom: 4px;
+    border-bottom: 2px solid #1a73e8;
+    text-align: center;
+  }
+  .lancamento-custo .preview-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+  }
+  .lancamento-custo .preview-row.destaque { background: #cfe2ff; border-color: #9ec5fe; }
+  .lancamento-custo .preview-row.destaque-final { background: #d1e7dd; border-color: #a3cfbb; }
+  .lancamento-custo .preview-label { font-weight: 600; color: #555; font-size: 12px; }
+  .lancamento-custo .preview-value { font-weight: bold; font-size: 16px; color: #333; text-align: right; white-space: nowrap; }
+  .lancamento-custo .pedido-busca { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-top: 10px; }
+  .lancamento-custo .pedido-busca .form-group { min-width: 200px; }
+  .lancamento-custo .pedidos-tabela { margin-top: 20px; }
+  .lancamento-custo .pedidos-tabela table { width: 100%; font-size: 13px; }
+  .lancamento-custo .pedidos-tabela th { background: #1a2b4c; color: #fff; padding: 8px 10px; white-space: nowrap; }
+  .lancamento-custo .pedidos-tabela td { padding: 8px 10px; vertical-align: middle; }
+  .lancamento-custo .custo-input { width: 110px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; }
+  .lancamento-custo .btn-lancar { background: #28a745; color: #fff; border: none; padding: 7px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+  .lancamento-custo .btn-lancar:disabled { opacity: 0.6; cursor: not-allowed; }
+  .lancamento-custo .pedidos-msg { margin-top: 12px; font-size: 13px; }
+  .lancamento-custo .pedidos-msg.sucesso { color: #155724; }
+  .lancamento-custo .pedidos-msg.erro { color: #721c24; }
+  .lancamento-custo .pedidos-vazio { margin-top: 16px; color: #666; font-size: 13px; }
+  @media (max-width: 900px) {
+    .lancamento-custo .form-grid { grid-template-columns: 1fr 1fr; }
+    .lancamento-custo .preview-columns { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="lancamento-custo">
+  <div class="card">
+    <h1 style="margin-bottom: 20px; font-size: 22px;">Lançamento de Custo</h1>
+
+    <div class="form-grid">
+      <div class="form-section-title full-width"><h3>Dados da Comanda</h3></div>
+
+      <div class="form-group">
+        <label class="form-label" for="num_of">Nº OF</label>
+        <input name="num_of" id="num_of" type="text" class="form-input" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="servico">Serviço</label>
+        <input name="servico" id="servico" type="text" class="form-input" readonly>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="quantidade">Quantidade SOS (un)</label>
+        <input name="quantidade" id="quantidade" type="number" class="form-input" value="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="milheiro">Milheiro (kg)</label>
+        <input name="milheiro" id="milheiro" type="number" step="0.01" class="form-input" value="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="tipo">Tipo</label>
+        <select name="tipo" id="tipo" class="form-select">
+          <option value="">Selecione...</option>
+          <option value="SACOLA">SACOLA</option>
+          <option value="CARTUCHO">CARTUCHO</option>
+          <option value="SEDA">SEDA</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="refugo_acerto_flexo">Refugo Acerto Flexo (kg)</label>
+        <input name="refugo_acerto_flexo" id="refugo_acerto_flexo" type="number" step="0.01" class="form-input" value="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="refugo_flexo">Refugo Flexo (kg)</label>
+        <input name="refugo_flexo" id="refugo_flexo" type="number" step="0.01" class="form-input" value="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="refugo_acerto_sos">Refugo Acerto SOS (kg)</label>
+        <input name="refugo_acerto_sos" id="refugo_acerto_sos" type="number" step="0.01" class="form-input" value="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="refugo_sos">Refugo SOS (kg)</label>
+        <input name="refugo_sos" id="refugo_sos" type="number" step="0.01" class="form-input" value="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="refugo_pre_impresso">Refugo Pré-impresso (kg)</label>
+        <input name="refugo_pre_impresso" id="refugo_pre_impresso" type="number" step="0.01" class="form-input" value="0">
+      </div>
+
+      <div class="form-section-title full-width"><h3>Dados de Cálculo de Custo</h3></div>
+
+      <div class="form-group">
+        <label class="form-label" for="tipo_papel">Tipo Papel</label>
+        <select name="tipo_papel" id="tipo_papel" class="form-select">
+          <option value="">Selecione...</option>
+          {% for p in papeis %}
+          <option value="{{ p }}">{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="valor_papel">Valor Papel (R$/kg)</label>
+        <input name="valor_papel" id="valor_papel" type="number" step="0.01" class="form-input" value="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="cola">Cola (R$/un)</label>
+        <input name="cola" id="cola" type="number" step="0.00001" class="form-input" value="{{ custos_op.cola }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="alca">Alça (R$/un)</label>
+        <input name="alca" id="alca" type="number" step="0.00001" class="form-input" value="{{ custos_op.alca }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="mdo_alca">Mão de Obra Alça (R$/un)</label>
+        <input name="mdo_alca" id="mdo_alca" type="number" step="0.00001" class="form-input" value="{{ custos_op.mdo_alca }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="tinta">Tinta (R$/un)</label>
+        <input name="tinta" id="tinta" type="number" step="0.00001" class="form-input" value="{{ custos_op.tinta }}">
+      </div>
+    </div>
+
+    <div class="form-section-title full-width" style="margin-top: 30px;"><h3>Resultado do Cálculo</h3></div>
+
+    <div class="preview-columns">
+      <div class="preview-column">
+        <div class="preview-column-title">Consumos Papel</div>
+        <div class="preview-row">
+          <span class="preview-label">Consumo Útil (kg)</span>
+          <span class="preview-value" id="prev_consumo_util">0,000</span>
+        </div>
+        <div class="preview-row">
+          <span class="preview-label">Refugo Total (kg)</span>
+          <span class="preview-value" id="prev_refugo_total">0,000</span>
+        </div>
+        <div class="preview-row">
+          <span class="preview-label">Soma Consumo (kg)</span>
+          <span class="preview-value" id="prev_soma_consumo">0,000</span>
+        </div>
+      </div>
+
+      <div class="preview-column">
+        <div class="preview-column-title">Custos Separados</div>
+        <div class="preview-row">
+          <span class="preview-label">Custo Papel (R$)</span>
+          <span class="preview-value" id="prev_custo_papel">0,00</span>
+        </div>
+        <div class="preview-row">
+          <span class="preview-label">Custo Tinta (R$)</span>
+          <span class="preview-value" id="prev_custo_tinta">0,00</span>
+        </div>
+        <div class="preview-row">
+          <span class="preview-label">Custo Cola (R$)</span>
+          <span class="preview-value" id="prev_custo_cola">0,00</span>
+        </div>
+        <div class="preview-row">
+          <span class="preview-label">Custo Alça (R$)</span>
+          <span class="preview-value" id="prev_custo_alca">0,00</span>
+        </div>
+        <div class="preview-row">
+          <span class="preview-label">Custo MDO Alça (R$)</span>
+          <span class="preview-value" id="prev_custo_mdo_alca">0,00</span>
+        </div>
+      </div>
+
+      <div class="preview-column destaque">
+        <div class="preview-column-title">Totais</div>
+        <div class="preview-row destaque">
+          <span class="preview-label">Custo Prévia (R$)</span>
+          <span class="preview-value" id="prev_custo_previa">0,00</span>
+        </div>
+        <div class="preview-row destaque-final">
+          <span class="preview-label">Custo Milheiro (R$)</span>
+          <span class="preview-value" id="prev_custo_milheiro">0,00</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section-title full-width" style="margin-top: 40px;"><h3>Lançamento de Custo</h3></div>
+
+    <div class="pedido-busca">
+      <div class="form-group">
+        <label class="form-label" for="numero_pedido_busca">Número do Pedido</label>
+        <input type="number" id="numero_pedido_busca" class="form-input" placeholder="Digite o nº do pedido">
+      </div>
+      <button type="button" id="btn_buscar_pedido" class="btn">Buscar</button>
+    </div>
+
+    <div id="pedidos_msg" class="pedidos-msg" style="display:none;"></div>
+    <div id="pedidos_resultado" class="pedidos-tabela" style="display:none;">
+      <table class="table table-bordered table-sm table-striped">
+        <thead>
+          <tr>
+            <th>FANTASIA</th>
+            <th>QTDE_TOTAL</th>
+            <th>MEDIDA</th>
+            <th>PAPEL</th>
+            <th>GRUPO</th>
+            <th>CUSTO (R$)</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody id="pedidos_tbody"></tbody>
+      </table>
+    </div>
+    <div id="pedidos_vazio" class="pedidos-vazio" style="display:none;">Nenhum pedido encontrado para este número.</div>
+  </div>
+</div>
+
+<script>
+  window.CUSTOS_PAPEL = {{ custos_papel | tojson }};
+  window.CUSTOS_OP_PADRAO = {{ custos_op | tojson }};
+  window.BUSCAR_OF_URL = "{{ url_for('main.buscar_por_of') }}";
+  window.BUSCAR_PEDIDOS_URL = "{{ url_for('relatorio.buscar_pedidos_custo') }}";
+  window.LANCAR_CUSTO_URL = "{{ url_for('relatorio.lancar_custo_movimento') }}";
+</script>
+<script src="{{ url_for('static', filename='js/lancamento_custo.js') }}"></script>
+{% endblock %}

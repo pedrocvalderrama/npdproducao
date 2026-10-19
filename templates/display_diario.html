@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PRODUÇÃO - Display Diário</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/analise.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+  <style>
+    .filtro-form { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
+    .filtro-form label { font-weight: 600; }
+    .filtro-form input[type="date"], .filtro-form input[type="month"] { padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; }
+    .tabela-mensal { width: 100%; border-collapse: collapse; font-size: 13px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .tabela-mensal th { background: #366092; color: #fff; padding: 10px 12px; text-align: center; font-weight: 600; }
+    .tabela-mensal td { padding: 8px 12px; border: 1px solid #e0e0e0; text-align: center; }
+    .tabela-mensal td.texto { text-align: left; white-space: pre-line; }
+    .tabela-mensal td.equipamento { font-weight: 600; }
+    .tabela-mensal tbody tr:nth-child(odd) td { background: #f5f5f5; }
+    .tabela-mensal tbody tr:nth-child(even) td { background: #fff; }
+    .tabela-mensal tbody tr.sem-lancamento td { color: #999; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+    .section-header h3 { margin: 0; }
+    .tabela-mensal td.meta-atingida { color: #1e7e34; font-weight: 600; }
+    .metas-form { display: none; margin-bottom: 20px; padding: 15px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafbfc; }
+    .metas-form.show { display: block; }
+    .metas-form h4 { margin-bottom: 10px; }
+    .metas-campos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+    .metas-campo { display: flex; flex-direction: column; gap: 5px; }
+    .metas-campo label { font-weight: 600; }
+    .metas-campo input { padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; }
+    .metas-ajuda { color: #666; margin: 10px 0; }
+    .painel-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .painel-setor { border: 1px solid #e3e6ea; border-radius: 10px; padding: 20px; background: #fff; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .painel-titulo { font-size: 26px; font-weight: 700; color: #1a2b3c; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .gauge { width: 100%; max-width: 420px; display: block; margin: 0 auto; }
+    .gauge-fundo, .gauge-valor { fill: none; stroke-width: 34; }
+    .gauge-fundo { stroke: #eeeceb; }
+    .gauge-valor { stroke: #2e7df6; transition: stroke-dasharray 0.8s ease; }
+    .painel-setor.atingida .gauge-valor { stroke: #28a745; }
+    .gauge-pct { font-size: 30px; fill: #444; font-weight: 300; }
+    .painel-setor.atingida .gauge-pct { fill: #1e7e34; font-weight: 600; }
+    .gauge-sem-meta { font-size: 24px; fill: #999; }
+    .gauge-limite { font-size: 12px; fill: #666; }
+    .painel-numeros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+    .painel-numero { background: #f5f7fa; border-radius: 8px; padding: 10px 6px; }
+    .painel-numero span { display: block; font-size: 13px; color: #666; text-transform: uppercase; margin-bottom: 4px; }
+    .painel-numero strong { font-size: 22px; color: #1a2b3c; }
+    .painel-falta { background: #fff4e5; }
+    .painel-falta strong { color: #c05600; }
+    .painel-setor.atingida .painel-falta { background: #e6f4ea; }
+    .painel-setor.atingida .painel-falta strong { color: #1e7e34; font-size: 17px; }
+    .painel-controles { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .painel-controles-rotulo { font-weight: 600; }
+    .painel-check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 600; user-select: none; }
+    .painel-check input { width: 16px; height: 16px; cursor: pointer; }
+    .painel-vazio { display: none; padding: 30px; text-align: center; color: #888; font-size: 15px; border: 1px dashed #ccc; border-radius: 8px; }
+    .painel-rodape { margin-top: 15px; color: #888; font-size: 12px; text-align: right; }
+
+    /* Modo TV (tela cheia): tudo escala com a largura da tela */
+    .painel-tv:fullscreen { background: #f5f5f5; padding: 2.5vw; margin: 0; border-radius: 0; display: flex; flex-direction: column; justify-content: center; overflow: auto; }
+    .painel-tv:fullscreen .painel-controles { display: none; }
+    .painel-tv:fullscreen .section-header h3 { font-size: 2.4vw; }
+    .painel-tv:fullscreen .painel-grid { gap: 2vw; }
+    .painel-tv:fullscreen .painel-setor { padding: 2vw 1.5vw; }
+    .painel-tv:fullscreen .painel-titulo { font-size: 3vw; }
+    .painel-tv:fullscreen .gauge { max-width: none; max-height: 52vh; }
+    .painel-tv:fullscreen .painel-numero span { font-size: 1.1vw; }
+    .painel-tv:fullscreen .painel-numero strong { font-size: 2vw; }
+    .painel-tv:fullscreen .painel-setor.atingida .painel-falta strong { font-size: 1.6vw; }
+    .painel-tv:fullscreen .painel-rodape { font-size: 0.9vw; }
+    .painel-tv:fullscreen .painel-grid.um-setor { width: 60%; margin: 0 auto; }
+    @media (max-width: 900px) { .painel-grid { grid-template-columns: 1fr !important; } }
+
+    .alert { padding: 10px 14px; border-radius: 4px; margin-bottom: 15px; font-weight: 600; }
+    .alert-success { background: #d4edda; color: #155724; }
+    .alert-danger { background: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    {% include 'partials/header_nav.html' %}
+    {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}
+    <div class="analysis-grid">
+      <div class="card summary-table-container">
+        <div class="section-header">
+          <h3>Produção do Dia – {{ data_selecionada_fmt }}</h3>
+        </div>
+        <form method="get" action="{{ url_for('main.display_diario') }}" class="filtro-form" id="form-data">
+          <label for="data">Data:</label>
+          <input type="date" lang="pt-BR" id="data" name="data" value="{{ data_selecionada }}" onchange="document.getElementById('form-data').submit()">
+          <input type="hidden" name="mes" value="{{ mes_selecionado }}">
+          <button type="submit" class="btn">Atualizar</button>
+        </form>
+        <table class="tabela-mensal">
+          <thead>
+            <tr>
+              <th style="width: 12%;">Equipamento</th>
+              <th style="width: 10%;">Meta Diária</th>
+              <th style="width: 12%;">Quantidade Produzida</th>
+              <th>Problemas</th>
+              <th>Soluções</th>
+              <th>Observação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in producao_dia %}
+            <tr class="{{ '' if r.tem_lancamento else 'sem-lancamento' }}">
+              <td class="equipamento">{{ r.titulo }}</td>
+              <td>{{ r.meta_diaria_fmt or '—' }}</td>
+              <td>{{ r.quantidade_fmt if r.tem_lancamento else '—' }}</td>
+              <td class="texto">{{ r.problemas or '—' }}</td>
+              <td class="texto">{{ r.solucoes or '—' }}</td>
+              <td class="texto">{{ r.observacao or '—' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <div class="section-header" style="margin-top: 30px;">
+          <h3>Meta do Mês – {{ mes_selecionado_fmt }}</h3>
+        </div>
+        <form method="get" action="{{ url_for('main.display_diario') }}" class="filtro-form" id="form-mes">
+          <label for="mes">Mês:</label>
+          <input type="month" lang="pt-BR" id="mes" name="mes" value="{{ mes_selecionado }}" onchange="document.getElementById('form-mes').submit()">
+          <input type="hidden" name="data" value="{{ data_selecionada }}">
+          <button type="submit" class="btn">Atualizar</button>
+          <button type="button" class="btn" id="btn-metas" onclick="toggleMetas()">Metas</button>
+        </form>
+        <div class="metas-form" id="form-metas">
+          <h4>Definir metas de {{ mes_selecionado_fmt }}</h4>
+          <form method="post" action="{{ url_for('main.salvar_metas_display_diario') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="mes" value="{{ mes_selecionado }}">
+            <input type="hidden" name="data" value="{{ data_selecionada }}">
+            <div class="metas-campos">
+              {% for r in meta_mes %}
+              <div class="metas-campo">
+                <label for="meta_{{ r.grupo }}">{{ r.titulo }}</label>
+                <input type="number" min="0" step="1" id="meta_{{ r.grupo }}" name="meta_{{ r.grupo }}" value="{{ r.meta or '' }}">
+              </div>
+              {% endfor %}
+            </div>
+            <p class="metas-ajuda">Deixe em branco (ou 0) para remover a meta do mês.</p>
+            <button type="submit" class="btn">Salvar Metas</button>
+          </form>
+        </div>
+        <table class="tabela-mensal">
+          <thead>
+            <tr>
+              <th style="width: 16%;"></th>
+              <th>Quantidade Produzida</th>
+              <th>Meta</th>
+              <th>Status (%)</th>
+              <th>Quanto Falta para Meta</th>
+              <th>Projeção Calculada</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in meta_mes %}
+            <tr>
+              <td class="equipamento">{{ r.titulo }}</td>
+              <td>{{ r.produzido_fmt }}</td>
+              <td>{{ r.meta_fmt }}</td>
+              <td class="{{ 'meta-atingida' if r.atingida else '' }}">{{ r.status_fmt }}</td>
+              <td class="{{ 'meta-atingida' if r.atingida else '' }}">{{ 'Meta atingida' if r.atingida else r.falta_fmt }}</td>
+              <td>{{ r.projecao_fmt }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card painel-tv" id="painel-tv">
+        <div class="section-header">
+          <h3>Painel de Metas – {{ mes_selecionado_fmt }}</h3>
+          <div class="painel-controles">
+            <span class="painel-controles-rotulo">Mostrar:</span>
+            {% for r in meta_mes %}
+            <label class="painel-check">
+              <input type="checkbox" class="painel-filtro" value="{{ r.grupo }}" checked onchange="aplicarFiltroPainel(true)">
+              {{ r.setor }}
+            </label>
+            {% endfor %}
+            <button type="button" class="btn" id="btn-tela-cheia" onclick="abrirTelaCheia()">Tela cheia (TV)</button>
+          </div>
+        </div>
+        <div class="painel-vazio" id="painel-vazio">Selecione ao menos um setor para exibir no painel.</div>
+        <div class="painel-grid" id="painel-conteudo">
+          {% for r in meta_mes %}
+          <div class="painel-setor {{ 'atingida' if r.atingida else '' }}" data-grupo="{{ r.grupo }}">
+            <div class="painel-titulo">{{ r.setor }}</div>
+            <svg class="gauge" viewBox="0 0 240 145" role="img" aria-label="{{ r.setor }}: {{ r.status_fmt }} da meta">
+              <path class="gauge-fundo" d="M 25 120 A 95 95 0 0 1 215 120" pathLength="100"></path>
+              {% if r.meta %}
+              <path class="gauge-valor" d="M 25 120 A 95 95 0 0 1 215 120" pathLength="100" stroke-dasharray="{{ '%.2f'|format(r.pct_grafico) }} 100"></path>
+              <text class="gauge-pct" x="120" y="116" text-anchor="middle">{{ r.status_fmt }}</text>
+              {% else %}
+              <text class="gauge-sem-meta" x="120" y="108" text-anchor="middle">Sem meta</text>
+              {% endif %}
+              <text class="gauge-limite" x="25" y="142" text-anchor="middle">0%</text>
+              <text class="gauge-limite" x="215" y="142" text-anchor="middle">100%</text>
+            </svg>
+            <div class="painel-numeros">
+              <div class="painel-numero">
+                <span>Realizado</span>
+                <strong>{{ r.produzido_fmt }}</strong>
+              </div>
+              <div class="painel-numero">
+                <span>Meta</span>
+                <strong>{{ r.meta_fmt }}</strong>
+              </div>
+              <div class="painel-numero painel-falta">
+                <span>{{ 'Status' if r.atingida else 'Falta' }}</span>
+                <strong>{{ 'Meta atingida!' if r.atingida else r.falta_fmt }}</strong>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="painel-rodape">Atualizado às <span id="painel-hora"></span> · atualiza sozinho a cada 5 minutos</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const INTERVALO_ATUALIZACAO_MS = 5 * 60 * 1000;
+
+    function marcarHora() {
+      document.getElementById('painel-hora').textContent =
+        new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    const CHAVE_FILTRO_PAINEL = 'displayDiario.setoresPainel';
+
+    function aplicarFiltroPainel(salvar) {
+      const filtros = Array.from(document.querySelectorAll('.painel-filtro'));
+      const selecionados = filtros.filter(function(f) { return f.checked; }).map(function(f) { return f.value; });
+      if (salvar) localStorage.setItem(CHAVE_FILTRO_PAINEL, JSON.stringify(selecionados));
+
+      document.querySelectorAll('#painel-conteudo .painel-setor').forEach(function(card) {
+        card.hidden = !selecionados.includes(card.dataset.grupo);
+      });
+      const grade = document.getElementById('painel-conteudo');
+      grade.style.gridTemplateColumns = 'repeat(' + Math.max(selecionados.length, 1) + ', 1fr)';
+      grade.classList.toggle('um-setor', selecionados.length === 1);
+      document.getElementById('painel-vazio').style.display = selecionados.length ? 'none' : 'block';
+    }
+
+    function restaurarFiltroPainel() {
+      let salvos = null;
+      try { salvos = JSON.parse(localStorage.getItem(CHAVE_FILTRO_PAINEL)); } catch (e) { salvos = null; }
+      if (Array.isArray(salvos)) {
+        document.querySelectorAll('.painel-filtro').forEach(function(f) { f.checked = salvos.includes(f.value); });
+      }
+      aplicarFiltroPainel(false);
+    }
+
+    function abrirTelaCheia() {
+      const painel = document.getElementById('painel-tv');
+      if (painel.requestFullscreen) painel.requestFullscreen();
+    }
+
+    // Recarrega só os medidores (sem recarregar a página), para não sair da tela cheia.
+    function atualizarPainel() {
+      fetch(window.location.href, { cache: 'no-store' })
+        .then(function(resp) { return resp.ok ? resp.text() : Promise.reject(resp.status); })
+        .then(function(html) {
+          const novo = new DOMParser().parseFromString(html, 'text/html').getElementById('painel-conteudo');
+          if (novo) {
+            document.getElementById('painel-conteudo').innerHTML = novo.innerHTML;
+            aplicarFiltroPainel(false);
+            marcarHora();
+          }
+        })
+        .catch(function(erro) { console.error('Erro ao atualizar painel:', erro); });
+    }
+
+    restaurarFiltroPainel();
+    marcarHora();
+    setInterval(atualizarPainel, INTERVALO_ATUALIZACAO_MS);
+  </script>
+  <script>
+    function toggleMetas() {
+      const form = document.getElementById('form-metas');
+      const btn = document.getElementById('btn-metas');
+      const aberto = form.classList.toggle('show');
+      btn.textContent = aberto ? 'Ocultar Metas' : 'Metas';
+    }
+    document.querySelectorAll('.alert').forEach(function(alert) {
+      setTimeout(function() {
+        alert.style.transition = 'opacity 0.5s ease-out';
+        alert.style.opacity = '0';
+        setTimeout(function() { alert.remove(); }, 500);
+      }, 3000);
+    });
+  </script>
+</body>
+</html>

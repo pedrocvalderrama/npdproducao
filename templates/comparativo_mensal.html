@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PRODUÇÃO - Comparativo Mensal</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/analise.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+  <style>
+    .meta-form { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
+    .meta-form label { font-weight: 600; }
+    .meta-form input[type="number"] { width: 140px; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; }
+    .meta-form select { padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; min-width: 100px; }
+    .meta-mensal-form { margin-bottom: 20px; display: none; }
+    .meta-mensal-form.show { display: block; }
+    .meta-mensal-form table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .meta-mensal-form th { background: #366092; color: #fff; padding: 8px; text-align: center; font-weight: 600; }
+    .meta-mensal-form td { padding: 8px; border: 1px solid #e0e0e0; text-align: center; }
+    .meta-mensal-form input[type="number"] { width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
+    .tabela-mensal { width: 100%; border-collapse: collapse; font-size: 13px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .tabela-mensal th { background: #366092; color: #fff; padding: 10px 12px; text-align: center; font-weight: 600; }
+    .tabela-mensal td { padding: 8px 12px; border: 1px solid #e0e0e0; text-align: center; }
+    .tabela-mensal tbody tr:nth-child(odd) td { background: #f5f5f5; }
+    .tabela-mensal tbody tr:nth-child(even) td { background: #fff; }
+    .tabela-mensal tbody tr.total-geral td { font-weight: bold; background: #fff !important; border-top: 2px solid #1a2b3c; }
+    .tabela-mensal td.text-right, .tabela-mensal th.text-right { text-align: right; }
+    .chart-container { margin: 30px 0; padding: 20px; background: #3d4a5c; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .chart-container canvas { width: 100% !important; height: 480px !important; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+    .section-header h3 { margin: 0; }
+    .btn-success { background-color: #28a745; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 14px; cursor: pointer; }
+    .btn-success:hover { background-color: #218838; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    {% include 'partials/header_nav.html' %}
+    <div class="analysis-grid">
+      <div class="card summary-table-container">
+        <div class="section-header">
+          <h3>Comparativo Mensal – Métricas por Mês</h3>
+          <a href="{{ url_for('main.comparativo_mensal', export='excel', section='metricas', ano=ano_selecionado) }}" class="btn btn-success">Exportar Excel</a>
+        </div>
+        <form method="get" action="{{ action_url }}" class="meta-form" id="form-meta">
+          <label for="ano">Ano:</label>
+          <select id="ano" name="ano" onchange="document.getElementById('form-meta').submit()">
+            {% for a in anos_disponiveis %}
+            <option value="{{ a }}" {% if ano_selecionado == a|string %}selected{% endif %}>{{ a }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn">Atualizar</button>
+          <button type="button" class="btn" onclick="toggleMetas()" id="btn-metas">Metas</button>
+        </form>
+        <div class="meta-mensal-form" id="form-metas">
+          <h4 style="margin-bottom: 10px;">Definir Metas por Mês</h4>
+          <form method="post" action="{{ action_url }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="ano_meta" value="{{ ano_selecionado }}">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mês</th>
+                  <th>Meta Quantidade</th>
+                  <th>Mês</th>
+                  <th>Meta Quantidade</th>
+                  <th>Mês</th>
+                  <th>Meta Quantidade</th>
+                  <th>Mês</th>
+                  <th>Meta Quantidade</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  {% for r in rows_mensal[:4] %}
+                  <td>{{ r.mes_nome }}</td>
+                  <td><input type="number" name="meta_mes_{{ r.mes_num }}" value="{{ r.meta_quantidade|int if r.meta_quantidade else '' }}" min="1" step="1"></td>
+                  {% endfor %}
+                </tr>
+                <tr>
+                  {% for r in rows_mensal[4:8] %}
+                  <td>{{ r.mes_nome }}</td>
+                  <td><input type="number" name="meta_mes_{{ r.mes_num }}" value="{{ r.meta_quantidade|int if r.meta_quantidade else '' }}" min="1" step="1"></td>
+                  {% endfor %}
+                </tr>
+                <tr>
+                  {% for r in rows_mensal[8:12] %}
+                  <td>{{ r.mes_nome }}</td>
+                  <td><input type="number" name="meta_mes_{{ r.mes_num }}" value="{{ r.meta_quantidade|int if r.meta_quantidade else '' }}" min="1" step="1"></td>
+                  {% endfor %}
+                </tr>
+              </tbody>
+            </table>
+            <button type="submit" class="btn" style="margin-top: 15px;">Salvar Metas            </button>
+          </form>
+        </div>
+        <table class="tabela-mensal">
+          <thead>
+            <tr>
+              <th>Meses</th>
+              <th>Quantidade Mês</th>
+              <th>Meta Alcançada</th>
+              <th>Percentual de Refugo SOS</th>
+              <th>Percentual de Refugo SOS + Flexo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows_mensal %}
+            <tr>
+              <td>{{ r.mes_nome }}</td>
+              <td>{{ r.quantidade_mes_fmt }}</td>
+              <td>{{ r.meta_alcancada_fmt }}</td>
+              <td>{{ r.pct_refugo_sos_fmt }}</td>
+              <td>{{ r.pct_refugo_sos_flexo_fmt }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-geral">
+              <td>Total Geral</td>
+              <td>{{ total_quantidade_fmt }}</td>
+              <td>{{ total_meta_fmt }}</td>
+              <td>{{ total_pct_sos_fmt }}</td>
+              <td>{{ total_pct_sos_flexo_fmt }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="section-header" style="margin-top: 30px;">
+          <h3>Consumo e Produção por Tipo de Impressão</h3>
+          <a href="{{ url_for('main.comparativo_mensal', export='excel', section='producao_tipo', ano=ano_selecionado) }}" class="btn btn-success">Exportar Excel</a>
+        </div>
+        <table class="tabela-mensal">
+          <thead>
+            <tr>
+              <th>Meses</th>
+              <th>Consumo Total</th>
+              <th>Refugo Produção Total (kg)</th>
+              <th>Percentual Produção SOS</th>
+              <th>Percentual Produção Pré-Impresso</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows_producao_tipo %}
+            <tr>
+              <td>{{ r.mes_nome }}</td>
+              <td>{{ r.consumo_total_fmt }}</td>
+              <td>{{ r.refugo_producao_total_kg_fmt }}</td>
+              <td>{{ r.pct_producao_sos_fmt }}</td>
+              <td>{{ r.pct_producao_pre_impresso_fmt }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-geral">
+              <td>Total Geral</td>
+              <td>{{ total_consumo_total_fmt }}</td>
+              <td>{{ total_refugo_producao_total_kg_fmt }}</td>
+              <td>{{ total_pct_producao_sos_fmt }}</td>
+              <td>{{ total_pct_producao_pre_impresso_fmt }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="section-header" style="margin-top: 30px;">
+          <h3>Consumo de Papel por Bobina</h3>
+          <a href="{{ url_for('main.comparativo_mensal', export='excel', section='bobina', ano=ano_selecionado) }}" class="btn btn-success">Exportar Excel</a>
+        </div>
+        <table class="tabela-mensal">
+          <thead>
+            <tr>
+              <th>BOBINAS</th>
+              <th class="text-right">Largura</th>
+              {% for mes_nome in meses_nome_bobina %}
+              <th class="text-right">{{ mes_nome }}</th>
+              {% endfor %}
+              <th class="text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for grupo in rows_bobina %}
+            {% for lin in grupo.larguras %}
+            <tr>
+              {% if loop.first %}
+              <td rowspan="{{ grupo.larguras|length }}" style="vertical-align: middle; font-weight: 600;">{{ grupo.papel }}</td>
+              {% endif %}
+              <td class="text-right">{{ lin.largura }}</td>
+              {% for mes_num in range(1, 13) %}
+              <td class="text-right">{{ lin.consumo_por_mes_fmt[mes_num] }}</td>
+              {% endfor %}
+              <td class="text-right">{{ lin.total_fmt }}</td>
+            </tr>
+            {% endfor %}
+            {% endfor %}
+            {% if rows_bobina %}
+            <tr class="total-geral">
+              <td colspan="2">Total Geral</td>
+              {% for mes_num in range(1, 13) %}
+              <td class="text-right">{{ totais_bobina_por_mes_fmt[mes_num] }}</td>
+              {% endfor %}
+              <td class="text-right">{{ total_geral_bobina_fmt }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="15" style="text-align: center; padding: 20px;">Nenhum dado encontrado para o ano selecionado (papel + formato com largura conhecida).</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+        <div class="section-header" style="margin-top: 30px;">
+          <h3>Consumo Total por Tipo de Papel</h3>
+          <a href="{{ url_for('main.comparativo_mensal', export='excel', section='consumo_papel', ano=ano_selecionado) }}" class="btn btn-success">Exportar Excel</a>
+        </div>
+        <table class="tabela-mensal">
+          <thead>
+            <tr>
+              <th>Meses</th>
+              {% for p in papeis_ordenados %}
+              <th class="text-right">{{ p }}</th>
+              {% endfor %}
+              <th class="text-right">Consumo Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows_consumo_papel %}
+            <tr>
+              <td>{{ r.mes_nome }}</td>
+              {% for p in papeis_ordenados %}
+              <td class="text-right">{{ r.consumo_por_papel_fmt.get(p, '—') }}</td>
+              {% endfor %}
+              <td class="text-right">{{ r.consumo_total_mes_fmt }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-geral">
+              <td>Total Geral</td>
+              {% for p in papeis_ordenados %}
+              <td class="text-right">{{ totais_consumo_papel_fmt.get(p, '—') }}</td>
+              {% endfor %}
+              <td class="text-right">{{ total_geral_papel_fmt }}</td>
+            </tr>
+          </tbody>
+        </table>
+        {% if chart_data %}
+        <div class="chart-container">
+          <canvas id="comparativo-mensal-chart"></canvas>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% if chart_data %}
+  <script src="{{ url_for('static', filename='js/vendor/chart.umd.min.js') }}"></script>
+  <script id="chart-data" type="application/json">{{ chart_data | tojson }}</script>
+  <script src="{{ url_for('static', filename='js/comparativo_mensal_chart.js') }}"></script>
+  {% endif %}
+  <script>
+    function toggleMetas() {
+      const formMetas = document.getElementById('form-metas');
+      const btnMetas = document.getElementById('btn-metas');
+      if (formMetas.classList.contains('show')) {
+        formMetas.classList.remove('show');
+        btnMetas.textContent = 'Metas';
+      } else {
+        formMetas.classList.add('show');
+        btnMetas.textContent = 'Ocultar Metas';
+      }
+    }
+  </script>
+</body>
+</html>

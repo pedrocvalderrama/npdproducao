@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRODUÇÃO - Histórico</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/historico.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <style>
+        /* Cabeçalhos com cálculo: cursor de ajuda ao passar o mouse */
+        .tabela th[data-column="refugo_robo_kg"],
+        .tabela th[data-column="refugo_inspecao_final_kg"],
+        .tabela th[data-column="consumo_total"],
+        .tabela th[data-column="refugo_pct"],
+        .tabela th[data-column="refugo_pct_flexo"],
+        .tabela th[data-column="eficiencia_pct"],
+        .tabela th[data-column="tempo_acerto_s"],
+        .tabela th[data-column="tempo_prod_s"],
+        .tabela th[data-column="tempo_acerto_impressora"],
+        .tabela th[data-column="tempo_prod_impressora"],
+        .tabela th[data-column="velocidade_un_min"],
+        .tabela th[data-column="velocidade_un_min_flexo"],
+        .tabela th[data-column="perdas_geral_kg"],
+        .tabela th[data-column="refugo_producao_total"] { cursor: help; }
+        /* Cabeçalho azul suave da primeira coluna até Quantidade Comanda */
+        .tabela th.header-azul { background-color: #a8c5e8; color: #1a365d; }
+        .tabela th.header-azul a { color: #1a365d; }
+        /* Nº OF e Serviço (sticky): mesma cor que as demais colunas até Quantidade Comanda */
+        .tabela th.sticky-left.header-azul { background-color: #a8c5e8 !important; color: #1a365d; }
+        .tabela th.sticky-left.header-azul a { color: #1a365d; }
+        /* Cabeçalho verde suave da coluna Impressora até Fim Produção Impressora */
+        .tabela th.header-verde { background-color: #a8d5b0; color: #1a3d1f; }
+        .tabela th.header-verde a { color: #1a3d1f; }
+        /* Cabeçalho ciano suave da coluna SOS até Fim Produção SOS */
+        .tabela th.header-ciano { background-color: #a3d4d4; color: #0d3d3d; }
+        .tabela th.header-ciano a { color: #0d3d3d; }
+        /* Cabeçalho laranja suave da coluna Refugo Produção (Peças) até Consumo Total */
+        .tabela th.header-laranja { background-color: #e8c4a0; color: #4a2c0a; }
+        .tabela th.header-laranja a { color: #4a2c0a; }
+        /* Sem margem branca à esquerda antes da coluna Nº OF */
+        .historico-table-card { padding-left: 0 !important; }
+        /* Sem espaço acima da tabela */
+        .historico-table-card .tabela { margin-top: 0; padding-top: 0; }
+    </style>
+</head>
+<body>
+  <div id="filter-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Filtros Avançados</h2>
+        <button class="modal-close" onclick="document.getElementById('filter-modal').style.display='none'">&times;</button>
+      </div>
+      <form id="filter-form" method="get" action="{{ action_url }}" hx-get="{{ action_url }}" hx-target="#historico-resultado" hx-push-url="true" hx-on::after-request="document.getElementById('filter-modal').style.display='none'">
+        <div class="modal-body">
+          <div class="filter-group" style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+            <div>
+              <label>Serviço:</label>
+              <input type="text" name="servico" value="{{ request.args.get('servico', '') }}" placeholder="Digite parte do nome do serviço" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+            </div>
+            <div>
+              <label>Nº de OF:</label>
+              <input type="text" name="num_of" value="{{ request.args.get('num_of', '') }}" placeholder="Digite o Nº de OF" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+            </div>
+            <div>
+              <label>Nº de Pedido:</label>
+              <input type="text" name="numero_pedido" value="{{ request.args.get('numero_pedido', '') }}" placeholder="Digite o Nº de Pedido" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+            </div>
+          </div>
+          <div class="filter-group">
+            <label><strong>Data SOS</strong></label>
+            <label style="font-weight: normal; margin-top: 5px; font-size: 12px;">Período SOS (De):</label>
+            <input type="date" name="start_date" value="{{ request.args.get('start_date', '') }}" style="margin-bottom: 10px;">
+            <label style="font-weight: normal; font-size: 12px;">Período SOS (Até):</label>
+            <input type="date" name="end_date" value="{{ request.args.get('end_date', '') }}">
+          </div>
+          <div class="filter-group">
+            <label><strong>Data Impressora</strong></label>
+            <label style="font-weight: normal; margin-top: 5px; font-size: 12px;">Período Impressora (De):</label>
+            <input type="date" name="start_date_impressora" value="{{ request.args.get('start_date_impressora', '') }}" style="margin-bottom: 10px;">
+            <label style="font-weight: normal; font-size: 12px;">Período Impressora (Até):</label>
+            <input type="date" name="end_date_impressora" value="{{ request.args.get('end_date_impressora', '') }}">
+          </div>
+          <div class="filter-group">
+            <label><strong>Data Robô</strong></label>
+            <label style="font-weight: normal; margin-top: 5px; font-size: 12px;">Período Robô (De):</label>
+            <input type="date" name="start_date_robo" value="{{ request.args.get('start_date_robo', '') }}" style="margin-bottom: 10px;">
+            <label style="font-weight: normal; font-size: 12px;">Período Robô (Até):</label>
+            <input type="date" name="end_date_robo" value="{{ request.args.get('end_date_robo', '') }}">
+          </div>
+          <div class="filter-group">
+            <label><strong>Data Inspeção</strong></label>
+            <label style="font-weight: normal; margin-top: 5px; font-size: 12px;">Período Inspeção (De):</label>
+            <input type="date" name="start_date_inspecao" value="{{ request.args.get('start_date_inspecao', '') }}" style="margin-bottom: 10px;">
+            <label style="font-weight: normal; font-size: 12px;">Período Inspeção (Até):</label>
+            <input type="date" name="end_date_inspecao" value="{{ request.args.get('end_date_inspecao', '') }}">
+          </div>
+          <div class="filter-group">
+            <label>Operador:</label>
+            <div class="checkbox-container">
+              {% for op in all_operadores %}
+              <label class="checkbox-item">
+                <input type="checkbox" name="operadores" value="{{ op }}" {% if op in request.args.getlist('operadores') %}checked{% endif %}> {{ op }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="filter-group">
+            <label>SOS:</label>
+            <div class="checkbox-container">
+              {% for sos_opt in maquinas_sos %}
+              <label class="checkbox-item">
+                <input type="checkbox" name="maquinas" value="{{ sos_opt }}" {% if sos_opt in request.args.getlist('maquinas') %}checked{% endif %}> {{ sos_opt }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="filter-group">
+            <label>Tipo de Impressão:</label>
+            <div class="checkbox-container">
+              {% set tipos_impressao = ['Pré-Impresso', 'SOS', 'Impressora'] %}
+              {% for tipo in tipos_impressao %}
+              <label class="checkbox-item">
+                <input type="checkbox" name="tipos_impressao" value="{{ tipo }}" {% if tipo in request.args.getlist('tipos_impressao') %}checked{% endif %}> {{ tipo }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('filter-modal').style.display='none'">Fechar</button>
+          <button type="submit" class="btn">Filtrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="container">
+    {% include 'partials/header_nav.html' %}
+    {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}
+    <script>
+      // Faz as mensagens flash desaparecerem após 0.5 segundos (executa imediatamente)
+      (function() {
+          const alerts = document.querySelectorAll('.alert');
+          alerts.forEach(function(alert) {
+              setTimeout(function() {
+                  alert.style.transition = 'opacity 0.5s ease-out';
+                  alert.style.opacity = '0';
+                  setTimeout(function() {
+                      alert.remove();
+                  }, 500);
+              }, 500);
+          });
+      })();
+    </script>
+    <div class="card">
+        <div class="filter-controls">
+            <div class="filter-controls-left">
+                <button class="btn btn-secondary" onclick="document.getElementById('filter-modal').style.display='flex'">Filtros Avançados</button>
+                <a href="{{ url_for('main.historico') }}" hx-get="{{ url_for('main.historico') }}" hx-target="#historico-resultado" hx-push-url="true" class="btn btn-icon btn-warning" title="Limpar Filtros"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/></svg></a>
+            </div>
+            <h2 class="card-title-center">Histórico de Produção</h2>
+            <a href="{{ url_for('main.historico', export='excel', **preserved_args) }}" class="btn btn-success">Exportar Excel</a>
+        </div>
+    </div>
+    <div id="historico-resultado">
+        {% include 'partials/historico_resultado.html' %}
+    </div>
+  </div>
+  <script src="{{ url_for('static', filename='js/vendor/htmx.min.js') }}"></script>
+  <script>
+    // Calcula a posição left das colunas fixadas à esquerda. Roda no carregamento
+    // inicial e de novo depois de cada troca via htmx (filtro/ordenação/paginação
+    // sem reload da página), já que o htmx substitui a tabela por uma nova.
+    function recalcularColunasFixasHistorico() {
+        const table = document.querySelector('.tabela');
+        if (table) {
+            const thead = table.querySelector('thead tr');
+            if (thead) {
+                const headers = Array.from(thead.querySelectorAll('th'));
+                let numOfIndex = -1;
+                let servicoIndex = -1;
+                
+                // Encontra os índices das colunas fixadas
+                headers.forEach((th, index) => {
+                    const col = th.getAttribute('data-column');
+                    if (col === 'num_of') numOfIndex = index;
+                    if (col === 'servico') servicoIndex = index;
+                });
+                
+                // Calcula e aplica posição para num_of
+                if (numOfIndex >= 0) {
+                    let leftPosition = 0;
+                    for (let i = 0; i < numOfIndex; i++) {
+                        const th = headers[i];
+                        if (th) {
+                            const rect = th.getBoundingClientRect();
+                            leftPosition += rect.width;
+                        }
+                    }
+                    const numOfCells = table.querySelectorAll('th[data-column="num_of"].sticky-left, td.sticky-left[data-column="num_of"]');
+                    numOfCells.forEach(cell => {
+                        cell.style.left = leftPosition + 'px';
+                    });
+                }
+                
+                // Calcula e aplica posição para servico
+                if (servicoIndex >= 0) {
+                    let leftPosition = 0;
+                    for (let i = 0; i < servicoIndex; i++) {
+                        const th = headers[i];
+                        if (th) {
+                            const rect = th.getBoundingClientRect();
+                            leftPosition += rect.width;
+                        }
+                    }
+                    const servicoCells = table.querySelectorAll('th[data-column="servico"].sticky-left, td.sticky-left[data-column="servico"]');
+                    servicoCells.forEach(cell => {
+                        cell.style.left = leftPosition + 'px';
+                    });
+                }
+            }
+        }
+    }
+    document.addEventListener('DOMContentLoaded', recalcularColunasFixasHistorico);
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+        if (evt.target && evt.target.id === 'historico-resultado') {
+            recalcularColunasFixasHistorico();
+        }
+    });
+  </script>
+</body>
+</html> 

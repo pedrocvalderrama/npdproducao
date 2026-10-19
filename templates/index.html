@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PRODUÇÃO - {{ page_title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+  <style>
+    .alert { padding: 10px 14px; border-radius: 4px; margin: 12px 0; font-weight: 600; }
+    .alert-success { background: #d4edda; color: #155724; }
+    .alert-danger { background: #f8d7da; color: #721c24; }
+    .alert-warning { background: #fff3cd; color: #856404; }
+  </style>
+</head>
+<body>
+  <div class="main-container">
+    {% include 'partials/header_nav.html' %}
+    {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}
+    <div class="layout-grid">
+        <div class="form-container">
+            <div class="card">
+              <h1>{{ page_title }}</h1>
+              <form id="form-lancamento" action="{{ action_url }}" method="post" style="margin-top:20px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-grid">
+                  <!-- Dados Gerais -->
+                  <div class="form-section-title full-width"><h3>Dados Gerais</h3></div>
+                  <div class="form-group"><label class="form-label" for="num_of">Nº OF</label><input name="num_of" id="num_of" type="text" class="form-input" value="{{ lancamento.num_of if lancamento else '' }}" required></div>
+                  <div class="form-group"><label class="form-label" for="numero_pedido">Número do Pedido</label><input name="numero_pedido" id="numero_pedido" type="number" class="form-input" value="{{ lancamento.numero_pedido if lancamento else '' }}" required></div>
+                  <div class="form-group"><label class="form-label" for="tipo">Tipo</label><select name="tipo" id="tipo" class="form-select" required><option value="">Selecione...</option>{% for t in tipos %}<option {% if lancamento and lancamento.tipo == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+                  <div class="form-group"><label class="form-label" for="servico">Serviço</label><input name="servico" id="servico" type="text" class="form-input" value="{{ lancamento.servico if lancamento else '' }}" required></div>
+                  <div class="form-group"><label class="form-label" for="formato">Formato</label><select name="formato" id="formato" class="form-select" required><option value="">Selecione...</option>{% for f in formatos %}<option {% if lancamento and lancamento.formato == f %}selected{% endif %}>{{ f }}</option>{% endfor %}</select></div>
+                  <div class="form-group"><label class="form-label" for="papel">Papel</label><select name="papel" id="papel" class="form-select" required><option value="">Selecione...</option>{% for p in papeis %}<option {% if lancamento and lancamento.papel == p %}selected{% endif %}>{{ p }}</option>{% endfor %}</select></div>
+                  <div class="form-group"><label class="form-label" for="qtd_cliches">Qtd. Clichês</label><input name="qtd_cliches" id="qtd_cliches" type="number" class="form-input" value="{{ lancamento.qtd_cliches if lancamento else '' }}" required></div>
+                  <div class="form-group"><label class="form-label" for="quantidade_comanda">Quantidade Comanda</label><input name="quantidade_comanda" id="quantidade_comanda" type="number" class="form-input" value="{{ lancamento.quantidade_comanda if lancamento else '' }}" required></div>
+                  <div class="form-group"><label class="form-label" for="milheiro">Peso Milheiro (kg)</label><input name="milheiro" id="milheiro" type="number" step="0.01" class="form-input" value="{{ lancamento.milheiro if lancamento else '' }}" required></div>
+                  
+                  <!-- Dados Impressora -->
+                  <div class="form-section-title full-width"><h3>Dados Impressora</h3></div>
+                  <div class="form-group"><label class="form-label" for="impressora">Impressora</label><select name="impressora" id="impressora" class="form-select">{% set impressora_options = ['IMPRESSORA'] %}<option value="">Selecione...</option>{% for imp_opt in impressora_options %}<option {% if lancamento and lancamento.impressora == imp_opt %}selected{% endif %}>{{ imp_opt }}</option>{% endfor %}</select></div>
+                  <div class="form-group"><label class="form-label" for="operador_impressora">Operador Impressora</label><select name="operador_impressora" id="operador_impressora" class="form-select"><option value="">Selecione...</option>{% for op in operadores_impressora %}<option {% if lancamento and lancamento.operador_impressora == op %}selected{% endif %}>{{ op }}</option>{% endfor %}</select></div>
+                  <div class="form-group"><label class="form-label" for="quantidade_impressora">Quantidade Impressora (un)</label><input name="quantidade_impressora" id="quantidade_impressora" type="number" class="form-input" value="{{ lancamento.quantidade_impressora if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="data_impressora">Data Impressora</label><input type="date" name="data_impressora" id="data_impressora" class="form-input" value="{{ lancamento.data_impressora if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="refugo_acerto_flexo">Refugo Acerto Flexo (kg)</label><input name="refugo_acerto_flexo" id="refugo_acerto_flexo" type="number" step="0.01" class="form-input" value="{{ lancamento.refugo_acerto_flexo if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="refugo_flexo">Refugo Flexo (kg)</label><input name="refugo_flexo" id="refugo_flexo" type="number" step="0.01" class="form-input" value="{{ lancamento.refugo_flexo if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="inicio_acerto_impressora">Início Acerto Impressora</label><input name="inicio_acerto_impressora" id="inicio_acerto_impressora" type="time" class="form-input" value="{{ lancamento.inicio_acerto_impressora if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="fim_acerto_impressora">Fim Acerto Impressora</label><input name="fim_acerto_impressora" id="fim_acerto_impressora" type="time" class="form-input" value="{{ lancamento.fim_acerto_impressora if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="inicio_prod_impressora">Início Produção Impressora (Dia 1)</label><input name="inicio_prod_impressora" id="inicio_prod_impressora" type="time" class="form-input" value="{{ lancamento.inicio_prod_impressora if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="fim_prod_impressora">Fim Produção Impressora (Dia 1)</label><input name="fim_prod_impressora" id="fim_prod_impressora" type="time" class="form-input" value="{{ lancamento.fim_prod_impressora if lancamento else '' }}"></div>
+                  <div class="full-width checkbox-group">
+                    <input type="checkbox" id="add_impressora_second_day" name="add_impressora_second_day"><label for="add_impressora_second_day">Adicionar 2º dia de produção Impressora?</label>
+                  </div>
+                  <div id="impressora_second_day_fields" class="full-width form-grid" style="display: none; margin-top: 10px; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px;">
+                      <div class="form-group"><label class="form-label" for="inicio_prod_impressora_2">Início Produção Impressora (Dia 2)</label><input name="inicio_prod_impressora_2" id="inicio_prod_impressora_2" type="time" class="form-input" value="{{ lancamento.inicio_prod_impressora_2 if lancamento else '' }}"></div>
+                      <div class="form-group"><label class="form-label" for="fim_prod_impressora_2">Fim Produção Impressora (Dia 2)</label><input name="fim_prod_impressora_2" id="fim_prod_impressora_2" type="time" class="form-input" value="{{ lancamento.fim_prod_impressora_2 if lancamento else '' }}"></div>
+                      <div class="form-group" style="grid-column: 3 / -1;"></div>
+                  </div>
+                  <div class="full-width checkbox-group">
+                    <input type="checkbox" id="add_impressora_third_day" name="add_impressora_third_day"><label for="add_impressora_third_day">Adicionar 3º dia de produção Impressora?</label>
+                  </div>
+                  <div id="impressora_third_day_fields" class="full-width form-grid" style="display: none; margin-top: 10px; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px;">
+                      <div class="form-group"><label class="form-label" for="inicio_prod_impressora_3">Início Produção Impressora (Dia 3)</label><input name="inicio_prod_impressora_3" id="inicio_prod_impressora_3" type="time" class="form-input" value="{{ lancamento.inicio_prod_impressora_3 if lancamento else '' }}"></div>
+                      <div class="form-group"><label class="form-label" for="fim_prod_impressora_3">Fim Produção Impressora (Dia 3)</label><input name="fim_prod_impressora_3" id="fim_prod_impressora_3" type="time" class="form-input" value="{{ lancamento.fim_prod_impressora_3 if lancamento else '' }}"></div>
+                      <div class="form-group" style="grid-column: 3 / -1;"></div>
+                  </div>
+                  <div class="full-width checkbox-group">
+                    <input type="checkbox" id="add_impressora_fourth_day" name="add_impressora_fourth_day"><label for="add_impressora_fourth_day">Adicionar 4º dia de produção Impressora?</label>
+                  </div>
+                  <div id="impressora_fourth_day_fields" class="full-width form-grid" style="display: none; margin-top: 10px; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px;">
+                      <div class="form-group"><label class="form-label" for="inicio_prod_impressora_4">Início Produção Impressora (Dia 4)</label><input name="inicio_prod_impressora_4" id="inicio_prod_impressora_4" type="time" class="form-input" value="{{ lancamento.inicio_prod_impressora_4 if lancamento else '' }}"></div>
+                      <div class="form-group"><label class="form-label" for="fim_prod_impressora_4">Fim Produção Impressora (Dia 4)</label><input name="fim_prod_impressora_4" id="fim_prod_impressora_4" type="time" class="form-input" value="{{ lancamento.fim_prod_impressora_4 if lancamento else '' }}"></div>
+                      <div class="form-group" style="grid-column: 3 / -1;"></div>
+                  </div>
+                  <div class="form-group full-width"><label class="form-label" for="observacoes_impressora">Observações Impressora</label><textarea name="observacoes_impressora" id="observacoes_impressora" class="form-textarea" rows="2">{{ lancamento.observacoes_impressora if lancamento else '' }}</textarea></div>
+                  
+                  <!-- Dados SOS -->
+                  <div class="form-section-title full-width"><h3>Dados SOS</h3></div>
+                  <div class="form-group"><label class="form-label" for="sos">Máquina SOS</label><select name="sos" id="sos" class="form-select"><option value="">Selecione...</option>{% for sos_opt in maquinas_sos %}<option {% if lancamento and lancamento.sos == sos_opt %}selected{% endif %}>{{ sos_opt }}</option>{% endfor %}</select></div>
+                  <div class="form-group"><label class="form-label" for="operador">Operador</label><select name="operador" id="operador" class="form-select"><option value="">Selecione...</option>{% for op in operadores_sos %}<option {% if lancamento and lancamento.operador == op %}selected{% endif %}>{{ op }}</option>{% endfor %}</select></div>
+                  <div class="form-group"><label class="form-label" for="quantidade">Quantidade SOS (un)</label><input name="quantidade" id="quantidade" type="number" class="form-input" value="{{ lancamento.quantidade if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="data">Data SOS</label><input type="date" name="data" id="data" class="form-input" value="{{ lancamento.data if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="refugo_acerto_sos">Refugo Acerto SOS (kg)</label><input name="refugo_acerto_sos" id="refugo_acerto_sos" type="number" step="0.01" class="form-input" value="{{ lancamento.refugo_acerto_sos if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="refugo_sos">Refugo SOS (kg)</label><input name="refugo_sos" id="refugo_sos" type="number" step="0.01" class="form-input" value="{{ lancamento.refugo_sos if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="refugo_pre_impresso">Refugo Pré-Impresso (kg)</label><input name="refugo_pre_impresso" id="refugo_pre_impresso" type="number" step="0.01" class="form-input" value="{{ lancamento.refugo_pre_impresso if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="tipo_impressao">Tipo de Impressão</label><select name="tipo_impressao" id="tipo_impressao" class="form-select"><option value="">Selecione...</option>{% set tipos_impressao = ['Pré-Impresso', 'SOS'] %}{% for ti in tipos_impressao %}<option {% if lancamento and lancamento.tipo_impressao == ti %}selected{% endif %}>{{ ti }}</option>{% endfor %}</select></div>
+                  <div class="form-group"><label class="form-label" for="inicio_acerto">Início Acerto SOS</label><input name="inicio_acerto" id="inicio_acerto" type="time" class="form-input" value="{{ lancamento.inicio_acerto if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="fim_acerto">Fim Acerto SOS</label><input name="fim_acerto" id="fim_acerto" type="time" class="form-input" value="{{ lancamento.fim_acerto if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="inicio_prod">Início Produção SOS (Dia 1)</label><input name="inicio_prod" id="inicio_prod" type="time" class="form-input" value="{{ lancamento.inicio_prod if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="fim_prod">Fim Produção SOS (Dia 1)</label><input name="fim_prod" id="fim_prod" type="time" class="form-input" value="{{ lancamento.fim_prod if lancamento else '' }}"></div>
+                  <div class="full-width checkbox-group">
+                    <input type="checkbox" id="add_second_day" name="add_second_day"><label for="add_second_day">Adicionar 2º dia de produção?</label>
+                  </div>
+                  <div id="second_day_fields" class="full-width form-grid" style="display: none; margin-top: 10px; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px;">
+                      <div class="form-group"><label class="form-label" for="inicio_prod_2">Início Produção SOS (Dia 2)</label><input name="inicio_prod_2" id="inicio_prod_2" type="time" class="form-input" value="{{ lancamento.inicio_prod_2 if lancamento else '' }}"></div>
+                      <div class="form-group"><label class="form-label" for="fim_prod_2">Fim Produção SOS (Dia 2)</label><input name="fim_prod_2" id="fim_prod_2" type="time" class="form-input" value="{{ lancamento.fim_prod_2 if lancamento else '' }}"></div>
+                      <div class="form-group" style="grid-column: 3 / -1;"></div>
+                  </div>
+                  <div class="full-width checkbox-group">
+                    <input type="checkbox" id="add_third_day" name="add_third_day"><label for="add_third_day">Adicionar 3º dia de produção?</label>
+                  </div>
+                  <div id="third_day_fields" class="full-width form-grid" style="display: none; margin-top: 10px; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px;">
+                      <div class="form-group"><label class="form-label" for="inicio_prod_3">Início Produção SOS (Dia 3)</label><input name="inicio_prod_3" id="inicio_prod_3" type="time" class="form-input" value="{{ lancamento.inicio_prod_3 if lancamento else '' }}"></div>
+                      <div class="form-group"><label class="form-label" for="fim_prod_3">Fim Produção SOS (Dia 3)</label><input name="fim_prod_3" id="fim_prod_3" type="time" class="form-input" value="{{ lancamento.fim_prod_3 if lancamento else '' }}"></div>
+                      <div class="form-group" style="grid-column: 3 / -1;"></div>
+                  </div>
+                  <div class="full-width checkbox-group">
+                    <input type="checkbox" id="add_fourth_day" name="add_fourth_day"><label for="add_fourth_day">Adicionar 4º dia de produção?</label>
+                  </div>
+                  <div id="fourth_day_fields" class="full-width form-grid" style="display: none; margin-top: 10px; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px;">
+                      <div class="form-group"><label class="form-label" for="inicio_prod_4">Início Produção SOS (Dia 4)</label><input name="inicio_prod_4" id="inicio_prod_4" type="time" class="form-input" value="{{ lancamento.inicio_prod_4 if lancamento else '' }}"></div>
+                      <div class="form-group"><label class="form-label" for="fim_prod_4">Fim Produção SOS (Dia 4)</label><input name="fim_prod_4" id="fim_prod_4" type="time" class="form-input" value="{{ lancamento.fim_prod_4 if lancamento else '' }}"></div>
+                      <div class="form-group" style="grid-column: 3 / -1;"></div>
+                  </div>
+                  <div class="form-group full-width"><label class="form-label" for="observacoes_sos">Observações SOS</label><textarea name="observacoes_sos" id="observacoes_sos" class="form-textarea" rows="2">{{ lancamento.observacoes_sos if lancamento else '' }}</textarea></div>
+                  
+                  <!-- Robo e Inspeção -->
+                  <div class="form-section-title full-width"><h3>Robo e Inspeção</h3></div>
+                  <div class="form-group"><label class="form-label" for="robo_alca">Robô Alça</label><select name="robo_alca" id="robo_alca" class="form-select" title="Obrigatório quando Quantidade Robô for maior que zero">{% set robo_alca_options = ['APLA-2R'] %}<option value="">Selecione...</option>{% for robo_opt in robo_alca_options %}<option {% if lancamento and lancamento.robo_alca == robo_opt %}selected{% endif %}>{{ robo_opt }}</option>{% endfor %}</select></div>
+                  <div class="form-group"><label class="form-label" for="operador_robo">Operador Robo</label><select name="operador_robo" id="operador_robo" class="form-select"><option value="">Selecione...</option>{% for op in operadores_robo %}<option {% if lancamento and lancamento.operador_robo == op %}selected{% endif %}>{{ op }}</option>{% endfor %}</select></div>
+                  <div class="form-group"><label class="form-label" for="quantidade_inspecao_geral">Quantidade Inspeção Final (un)</label><input name="quantidade_inspecao_geral" id="quantidade_inspecao_geral" type="number" class="form-input" value="{{ lancamento.quantidade_inspecao_geral if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="quantidade_robo">Quantidade Robô (un)</label><input name="quantidade_robo" id="quantidade_robo" type="number" class="form-input" value="{{ lancamento.quantidade_robo if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="data_inspecao">Data Inspeção</label><input type="date" name="data_inspecao" id="data_inspecao" class="form-input" value="{{ lancamento.data_inspecao if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="data_robo">Data Robô</label><input type="date" name="data_robo" id="data_robo" class="form-input" value="{{ lancamento.data_robo if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="refugo_robo">Refugo Robo (peças)</label><input name="refugo_robo" id="refugo_robo" type="number" step="0.01" class="form-input" value="{{ lancamento.refugo_robo if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="refugo_inspecao_final">Refugo Inspeção Final (peças)</label><input name="refugo_inspecao_final" id="refugo_inspecao_final" type="number" step="0.01" class="form-input" value="{{ lancamento.refugo_inspecao_final if lancamento else '' }}"></div>
+                  <div class="form-group full-width"><label class="form-label" for="observacoes_robo">Observações Robô e Inspeção</label><textarea name="observacoes_robo" id="observacoes_robo" class="form-textarea" rows="2">{{ lancamento.observacoes_robo if lancamento else '' }}</textarea></div>
+                  <!-- Campos hidden para valores calculados -->
+                  <input type="hidden" name="refugo_pct" id="refugo_pct" value="{{ lancamento.refugo_pct if lancamento else '' }}">
+                  <input type="hidden" name="refugo_pct_flexo" id="refugo_pct_flexo" value="{{ lancamento.refugo_pct_flexo if lancamento else '' }}">
+                  <input type="hidden" name="eficiencia_pct" id="eficiencia_pct" value="{{ lancamento.eficiencia_pct if lancamento else '' }}">
+                  <input type="hidden" name="velocidade_un_min" id="velocidade_un_min" value="{{ lancamento.velocidade_un_min if lancamento else '' }}">
+                  <input type="hidden" name="velocidade_un_min_flexo" id="velocidade_un_min_flexo" value="{{ lancamento.velocidade_un_min_flexo if lancamento else '' }}">
+                  <input type="hidden" name="perdas_un" id="perdas_un_hidden" value="{{ lancamento.perdas_un if lancamento else '' }}">
+                  <input type="hidden" name="tempo_prod_s" id="tempo_prod_s" value="{{ lancamento.tempo_prod_s if lancamento else '' }}">
+                  <input type="hidden" name="tempo_acerto_s" id="tempo_acerto_s" value="{{ lancamento.tempo_acerto_s if lancamento else '' }}">
+                </div>
+                {% if 'editar' in request.endpoint %}<button type="submit" class="btn btn-success">SALVAR ALTERAÇÕES</button>{% else %}<button type="submit" class="btn">LANÇAR DADOS</button>{% endif %}
+              </form>
+              <script>
+                // Inicializa campos numéricos ao carregar a página
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Lista de campos float (com step decimal)
+                    const camposFloat = [
+                        'milheiro', 'refugo_flexo', 'refugo_pre_impresso', 'refugo_sos',
+                        'refugo_acerto_flexo', 'refugo_acerto_sos', 'refugo_robo', 'refugo_inspecao_final'
+                    ];
+                    
+                    // Lista de campos int
+                    const camposInt = [
+                        'quantidade', 'quantidade_impressora', 'qtd_cliches', 'quantidade_comanda',
+                        'quantidade_inspecao_geral', 'quantidade_robo'
+                    ];
+                    
+                    // Inicializa campos float com 0.0
+                    camposFloat.forEach(function(campoNome) {
+                        const campo = document.querySelector(`[name="${campoNome}"]`);
+                        if (campo && (campo.value === '' || campo.value === null || campo.value === undefined)) {
+                            campo.value = '0.0';
+                        }
+                    });
+                    
+                    // Inicializa campos int com 0
+                    camposInt.forEach(function(campoNome) {
+                        const campo = document.querySelector(`[name="${campoNome}"]`);
+                        if (campo && (campo.value === '' || campo.value === null || campo.value === undefined)) {
+                            campo.value = '0';
+                        }
+                    });
+                    
+                    // Inicializa campos hidden calculados com 0
+                    const camposHidden = [
+                        'refugo_pct', 'refugo_pct_flexo', 'eficiencia_pct',
+                        'velocidade_un_min', 'velocidade_un_min_flexo', 'perdas_un',
+                        'tempo_prod_s', 'tempo_acerto_s'
+                    ];
+                    
+                    camposHidden.forEach(function(campoNome) {
+                        const campo = document.getElementById(campoNome);
+                        if (campo && (campo.value === '' || campo.value === null || campo.value === undefined)) {
+                            campo.value = '0';
+                        }
+                    });
+                });
+                
+                // Proteção adicional antes de submeter: garante que campos vazios sejam 0
+                document.querySelector('form').addEventListener('submit', function(e) {
+                    // Lista de campos numéricos usados em cálculos
+                    const camposCalculo = [
+                        'milheiro', 'refugo_flexo', 'refugo_pre_impresso', 'refugo_sos',
+                        'refugo_acerto_flexo', 'refugo_acerto_sos', 'refugo_robo',
+                        'refugo_inspecao_final', 'quantidade', 'quantidade_impressora',
+                        'qtd_cliches', 'quantidade_comanda', 'quantidade_inspecao_geral',
+                        'quantidade_robo'
+                    ];
+                    
+                    // Define como 0 todos os campos vazios antes de submeter
+                    camposCalculo.forEach(function(campoNome) {
+                        const campo = document.querySelector(`[name="${campoNome}"]`);
+                        if (campo && (campo.value === '' || campo.value === null || campo.value === undefined)) {
+                            // Verifica se é campo float ou int
+                            if (campo.step && parseFloat(campo.step) < 1) {
+                                campo.value = '0.0';
+                            } else {
+                                campo.value = '0';
+                            }
+                        }
+                    });
+                    
+                    // Garante que os campos hidden calculados também tenham valores válidos
+                    const camposHidden = [
+                        'refugo_pct', 'refugo_pct_flexo', 'eficiencia_pct',
+                        'velocidade_un_min', 'velocidade_un_min_flexo', 'perdas_un',
+                        'tempo_prod_s', 'tempo_acerto_s'
+                    ];
+                    
+                    camposHidden.forEach(function(campoNome) {
+                        const campo = document.getElementById(campoNome);
+                        if (campo && (campo.value === '' || campo.value === null || campo.value === undefined)) {
+                            campo.value = '0';
+                        }
+                    });
+                });
+              </script>
+            </div>
+        </div>
+    </div>
+  </div>
+  <script>
+    window.IDEAL_SPEED_RATES = {{ ideal_speed_rates | default({}) | tojson }};
+    window.WEIGHT_TOLERANCES = {{ weight_tolerances | default({}) | tojson }};
+  </script>
+  <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+  <script>
+    // Verifica se o Nº OF já existe e carrega os dados
+    document.getElementById('num_of').addEventListener('blur', function() {
+        const numOf = this.value.trim();
+        if (!numOf) return;
+        
+        fetch(`{{ url_for('main.buscar_por_of') }}?num_of=${encodeURIComponent(numOf)}`)
+            .then(response => {
+                if (response.status === 404) {
+                    // Nº OF não existe, mantém formulário vazio para novo registro
+                    return;
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data && Object.keys(data).length > 0) {
+                    // Preenche todos os campos do formulário com os dados encontrados
+                    Object.keys(data).forEach(key => {
+                        const field = document.querySelector(`[name="${key}"]`);
+                        if (field) {
+                            if (field.type === 'checkbox') {
+                                field.checked = data[key] ? true : false;
+                            } else if (field.tagName === 'SELECT') {
+                                field.value = data[key] || '';
+                            } else if (field.tagName === 'TEXTAREA') {
+                                field.value = data[key] || '';
+                            } else {
+                                field.value = data[key] || '';
+                            }
+                        }
+                    });
+                    
+                    // Atualiza checkboxes dos dias extras se houver dados
+                    [
+                        { checkbox: 'add_second_day', fields: 'second_day_fields', inicio: 'inicio_prod_2', fim: 'fim_prod_2' },
+                        { checkbox: 'add_third_day', fields: 'third_day_fields', inicio: 'inicio_prod_3', fim: 'fim_prod_3' },
+                        { checkbox: 'add_fourth_day', fields: 'fourth_day_fields', inicio: 'inicio_prod_4', fim: 'fim_prod_4' },
+                        { checkbox: 'add_impressora_second_day', fields: 'impressora_second_day_fields', inicio: 'inicio_prod_impressora_2', fim: 'fim_prod_impressora_2' },
+                        { checkbox: 'add_impressora_third_day', fields: 'impressora_third_day_fields', inicio: 'inicio_prod_impressora_3', fim: 'fim_prod_impressora_3' },
+                        { checkbox: 'add_impressora_fourth_day', fields: 'impressora_fourth_day_fields', inicio: 'inicio_prod_impressora_4', fim: 'fim_prod_impressora_4' }
+                    ].forEach(function(dia) {
+                        if (data[dia.inicio] || data[dia.fim]) {
+                            document.getElementById(dia.checkbox).checked = true;
+                            document.getElementById(dia.fields).style.display = 'grid';
+                        }
+                    });
+                    
+                    // Inicializa campos numéricos vazios após carregar dados
+                    const camposFloat = [
+                        'milheiro', 'refugo_flexo', 'refugo_pre_impresso', 'refugo_sos',
+                        'refugo_acerto_flexo', 'refugo_acerto_sos', 'refugo_robo', 'refugo_inspecao_final'
+                    ];
+                    const camposInt = [
+                        'quantidade', 'quantidade_impressora', 'qtd_cliches', 'quantidade_comanda',
+                        'quantidade_inspecao_geral', 'quantidade_robo'
+                    ];
+                    
+                    camposFloat.forEach(function(campoNome) {
+                        const campo = document.querySelector(`[name="${campoNome}"]`);
+                        if (campo && (campo.value === '' || campo.value === null || campo.value === undefined)) {
+                            campo.value = '0.0';
+                        }
+                    });
+                    
+                    camposInt.forEach(function(campoNome) {
+                        const campo = document.querySelector(`[name="${campoNome}"]`);
+                        if (campo && (campo.value === '' || campo.value === null || campo.value === undefined)) {
+                            campo.value = '0';
+                        }
+                    });
+                    
+                    // Recalcula a prévia
+                    if (window.calcPreview) {
+                        window.calcPreview();
+                    }
+                    
+                    // Altera o texto do botão para indicar que é uma atualização
+                    const submitBtn = document.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.textContent = 'ATUALIZAR DADOS';
+                        submitBtn.classList.add('btn-success');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar dados:', error);
+            });
+    });
+  </script>
+  <script>
+    // Faz as mensagens flash desaparecerem após 0.5 segundos
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            setTimeout(function() {
+                alert.style.transition = 'opacity 0.5s ease-out';
+                alert.style.opacity = '0';
+                setTimeout(function() {
+                    alert.remove();
+                }, 500);
+            }, 500);
+        });
+    });
+  </script>
+</body>
+</html> 

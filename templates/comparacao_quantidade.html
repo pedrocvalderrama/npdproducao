@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRODUÇÃO - Comparação Quantidade</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/historico.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <style>
+        /* Cabeçalho Quantidade Comanda: amarelo igual Número do Pedido (somente Comparação Quantidade) */
+        .tabela th[data-column="quantidade_comanda"] {
+            background-color: #fff9c4 !important;
+        }
+        /* Quantidade SOS e Refugo SOS peças: verde pastel clarinho (somente Comparação Quantidade) */
+        .tabela th[data-column="quantidade"],
+        .tabela th[data-column="refugo_sos_pecas"] {
+            background-color: #d4edda !important;
+        }
+        /* Cabeçalho Diferença: vermelho clarinho (somente Comparação Quantidade) */
+        .tabela th[data-column="diferenca"] {
+            background-color: #f8d7da !important;
+        }
+        /* Células Diferença: cores por faixa de valor */
+        .tabela td.diff-rosa { background-color: #f5c6cb !important; }
+        .tabela td.diff-laranja { background-color: #ffcc80 !important; }
+        .tabela td.diff-amarelo { background-color: #fff9c4 !important; }
+        .tabela td.diff-vermelho { background-color: #f8d7da !important; }
+        /* Cabeçalhos com cálculo: cursor de ajuda */
+        .tabela th[data-column="refugo_sos_pecas"],
+        .tabela th[data-column="diferenca"] { cursor: help; }
+        /* Coluna Observações: oculta por padrão; visível quando .show-observacoes no table-wrapper */
+        #table-wrapper-comparacao .col-observacoes { display: none; }
+        #table-wrapper-comparacao.show-observacoes .col-observacoes { display: table-cell; }
+        /* Legenda Diferença */
+        .diff-legend { display: inline-flex; flex-shrink: 0; margin-left: 8px; }
+        .diff-legend-table { border-collapse: collapse; font-size: 11px; font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 4px; overflow: hidden; }
+        .diff-legend-table th { background: #366092; color: #fff; padding: 4px 10px; text-align: center; white-space: nowrap; }
+        .diff-legend-table td { padding: 3px 8px; text-align: center; border: 1px solid rgba(0,0,0,0.08); white-space: nowrap; color: #333; }
+        .diff-legend-table .diff-leg-rosa { background: #f5c6cb; }
+        .diff-legend-table .diff-leg-laranja { background: #ffcc80; }
+        .diff-legend-table .diff-leg-amarelo { background: #fff9c4; }
+        .diff-legend-table .diff-leg-vermelho { background: #f8d7da; }
+        /* Sem margem branca à esquerda e sem espaço acima da tabela (Comparação Quantidade) */
+        .comparacao-table-card { padding-left: 0 !important; padding-top: 0 !important; }
+        .comparacao-table-card .tabela { margin-top: 0; padding-top: 0; }
+    </style>
+</head>
+<body>
+  <div id="filter-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Filtros Avançados</h2>
+        <button class="modal-close" onclick="document.getElementById('filter-modal').style.display='none'">&times;</button>
+      </div>
+      <form id="filter-form" method="get" action="{{ action_url }}" hx-get="{{ action_url }}" hx-target="#comparacao-resultado" hx-push-url="true" hx-on::after-request="document.getElementById('filter-modal').style.display='none'">
+        <div class="modal-body">
+          <div class="filter-group" style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+            <div>
+              <label>Serviço:</label>
+              <input type="text" name="servico" value="{{ request.args.get('servico', '') }}" placeholder="Digite parte do nome do serviço" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+            </div>
+            <div>
+              <label>Nº de OF:</label>
+              <input type="text" name="num_of" value="{{ request.args.get('num_of', '') }}" placeholder="Digite o Nº de OF" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+            </div>
+            <div>
+              <label>Número de Pedido:</label>
+              <input type="text" name="numero_pedido" value="{{ request.args.get('numero_pedido', '') }}" placeholder="Digite o Nº do pedido" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+            </div>
+          </div>
+          <div class="filter-group">
+            <label><strong>Data SOS</strong></label>
+            <label style="font-weight: normal; margin-top: 5px; font-size: 12px;">Período SOS (De):</label>
+            <input type="date" name="start_date" value="{{ request.args.get('start_date', '') }}" style="margin-bottom: 10px;">
+            <label style="font-weight: normal; font-size: 12px;">Período SOS (Até):</label>
+            <input type="date" name="end_date" value="{{ request.args.get('end_date', '') }}">
+          </div>
+          <div class="filter-group">
+            <label><strong>Data Inspeção Final</strong></label>
+            <label style="font-weight: normal; margin-top: 5px; font-size: 12px;">Período Inspeção Final (De):</label>
+            <input type="date" name="start_date_inspecao" value="{{ request.args.get('start_date_inspecao', '') }}" style="margin-bottom: 10px;">
+            <label style="font-weight: normal; font-size: 12px;">Período Inspeção Final (Até):</label>
+            <input type="date" name="end_date_inspecao" value="{{ request.args.get('end_date_inspecao', '') }}">
+          </div>
+          <div class="filter-group">
+            <label>Operador:</label>
+            <div class="checkbox-container">
+              {% for op in all_operadores %}
+              <label class="checkbox-item">
+                <input type="checkbox" name="operadores" value="{{ op }}" {% if op in request.args.getlist('operadores') %}checked{% endif %}> {{ op }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="filter-group">
+            <label>SOS:</label>
+            <div class="checkbox-container">
+              {% for sos_opt in maquinas_sos %}
+              <label class="checkbox-item">
+                <input type="checkbox" name="maquinas" value="{{ sos_opt }}" {% if sos_opt in request.args.getlist('maquinas') %}checked{% endif %}> {{ sos_opt }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('filter-modal').style.display='none'">Fechar</button>
+          <button type="submit" class="btn">Filtrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="container">
+    {% include 'partials/header_nav.html' %}
+    {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}
+    <script>
+      (function() {
+          const alerts = document.querySelectorAll('.alert');
+          alerts.forEach(function(alert) {
+              setTimeout(function() {
+                  alert.style.transition = 'opacity 0.5s ease-out';
+                  alert.style.opacity = '0';
+                  setTimeout(function() { alert.remove(); }, 500);
+              }, 500);
+          });
+      })();
+    </script>
+    <div class="card">
+        <div class="filter-controls">
+            <div class="filter-controls-left">
+                <button class="btn btn-secondary" onclick="document.getElementById('filter-modal').style.display='flex'">Filtros Avançados</button>
+                <a href="{{ url_for('main.comparacao_quantidade') }}" hx-get="{{ url_for('main.comparacao_quantidade') }}" hx-target="#comparacao-resultado" hx-push-url="true" class="btn btn-icon btn-warning" title="Limpar Filtros"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/></svg></a>
+                <div class="diff-legend">
+                    <table class="diff-legend-table">
+                        <tr><th colspan="4">DIFERENÇA</th></tr>
+                        <tr>
+                            <td class="diff-leg-rosa">Abaixo de -150</td>
+                            <td class="diff-leg-laranja">Abaixo de -100</td>
+                            <td class="diff-leg-amarelo">Acima de 100</td>
+                            <td class="diff-leg-vermelho">Acima de 150</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <h2 class="card-title-center">Comparação Quantidade</h2>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button type="button" id="btn-toggle-observacoes" class="btn btn-outline-secondary btn-sm" title="Exibir ou ocultar a coluna Observações">
+                    <span id="btn-toggle-observacoes-text">Mostrar Observações</span>
+                </button>
+                <a href="{{ url_for('main.comparacao_quantidade', export='excel', **preserved_args) }}" class="btn btn-success">Exportar Excel</a>
+            </div>
+        </div>
+    </div>
+    <div id="comparacao-resultado">
+        {% include 'partials/comparacao_quantidade_resultado.html' %}
+    </div>
+  </div>
+  <script src="{{ url_for('static', filename='js/vendor/htmx.min.js') }}"></script>
+  <script>
+    // Botão "Mostrar/Ocultar Observações" fica fora do fragmento trocado pelo
+    // htmx, então o wrapper da tabela é buscado a cada clique (não guardado
+    // numa variável), já que o próprio elemento é substituído a cada troca.
+    document.addEventListener('DOMContentLoaded', function() {
+        var btn = document.getElementById('btn-toggle-observacoes');
+        var btnText = document.getElementById('btn-toggle-observacoes-text');
+        if (btn && btnText) {
+            btn.addEventListener('click', function() {
+                var wrapper = document.getElementById('table-wrapper-comparacao');
+                if (!wrapper) return;
+                wrapper.classList.toggle('show-observacoes');
+                btnText.textContent = wrapper.classList.contains('show-observacoes') ? 'Ocultar Observações' : 'Mostrar Observações';
+            });
+        }
+    });
+    function recalcularColunasFixasComparacao() {
+        const table = document.querySelector('.tabela');
+        if (table) {
+            const thead = table.querySelector('thead tr');
+            if (thead) {
+                const headers = Array.from(thead.querySelectorAll('th'));
+                let numOfIndex = -1;
+                let servicoIndex = -1;
+                headers.forEach(function(th, index) {
+                    const col = th.getAttribute('data-column');
+                    if (col === 'num_of') numOfIndex = index;
+                    if (col === 'servico') servicoIndex = index;
+                });
+                if (numOfIndex >= 0) {
+                    let leftPosition = 0;
+                    for (let i = 0; i < numOfIndex; i++) {
+                        const th = headers[i];
+                        if (th) leftPosition += th.getBoundingClientRect().width;
+                    }
+                    table.querySelectorAll('th[data-column="num_of"].sticky-left, td.sticky-left[data-column="num_of"]').forEach(function(cell) { cell.style.left = leftPosition + 'px'; });
+                }
+                if (servicoIndex >= 0) {
+                    let leftPosition = 0;
+                    for (let i = 0; i < servicoIndex; i++) {
+                        const th = headers[i];
+                        if (th) leftPosition += th.getBoundingClientRect().width;
+                    }
+                    table.querySelectorAll('th[data-column="servico"].sticky-left, td.sticky-left[data-column="servico"]').forEach(function(cell) { cell.style.left = leftPosition + 'px'; });
+                }
+            }
+        }
+    }
+    document.addEventListener('DOMContentLoaded', recalcularColunasFixasComparacao);
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+        if (evt.target && evt.target.id === 'comparacao-resultado') {
+            recalcularColunasFixasComparacao();
+        }
+    });
+  </script>
+</body>
+</html>

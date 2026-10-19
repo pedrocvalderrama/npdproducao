@@ -1,0 +1,30 @@
+Preciso criar uma pagina nova com nome /movimento exatamente igual a /pedidos porem acrescentando uma coluna com nome custo.
+
+Essa coluna custo terá diversas lógicas para ser preenchida:
+
+1º - deve buscar na pagina /custo dois valores que serão buscados na linha com mesmo numero de pedido:
+
+1 coeficiente de custo -> um valor que será a formula resultante da coluna Custo final dividido pela coluna qtde (ambas colunas da mesma linha da pagina /custo)
+2 - o outro valor é o proprio valor da coluna qtde (da pagina /custo)
+
+
+2º - Procurar na pagina movimento, linhas com pedido até 10 para mais ou para menos do que o pedido da linha atual que tenha a mesma fantasia, medida, papel, grupo. Exemplo:
+
+Verificando a linha com pedido 21766 - Fantasia: My cris - Medida: 32x30x12 - Papel: Papel bagkraft 80grs - Grupo: Sacolas Personalizadas
+
+Deve achar pedidos com a coluna Pedido de valor 21756 até 21776 que tenham as mesmas fantasia, medida, papel, grupo.
+
+3º - Destes pedidos achados deve ir somando a quantidade do menor numero do pedido até o maior (21756,21757,21758...) até que chegue na quantidade retirada da pagina /custo ou que a diferença seja 20% para mais ou para menos. Por exemplo:
+
+Na pagina /custo se tivermos supostamente uma linha com numero de pedido 21757 com qtde 6300 e na pagina /movimento tivermos as seguintes linhas:
+
+Pedido: 21766 - Fantasia: My cris - Medida: 32x30x12 - Papel: Papel bagkraft 80grs - Grupo: Sacolas Personalizadas - Quantidade: 3000
+Pedido: 21767 - Fantasia: My cris - Medida: 32x30x12 - Papel: Papel bagkraft 80grs - Grupo: Sacolas Personalizadas - Quantidade: 3000
+Pedido: 21768 - Fantasia: My cris - Medida: 32x30x12 - Papel: Papel bagkraft 80grs - Grupo: Sacolas Personalizadas - Quantidade: 3000
+
+1º iteração: 21766 -> 3000 -> (diferença em relação a 6300 > que 20%) então soma com o proximo
+2º iteração: 21766 + 21767 -> 6000 - diferença < que 20% em relação a 6300 então finaliza o loop.
+
+Nesse caso o retorno seria os pedidos 21766 e 21767.
+
+4º - Após ter o retorno correto dos pedidos, preencher a coluna custo com a seguinte formula: coeficiente de custo(valor pego no passo 1) * qtde_total(pagina /movimento)

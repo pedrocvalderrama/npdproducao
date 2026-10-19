@@ -1,0 +1,58 @@
+{% set ep = request.endpoint or '' %}
+{% set setor_producao = ep in [
+  'main.index', 'main.duplicar', 'main.lancar', 'main.editar',
+  'main.lancamento_diario', 'main.display_diario', 'main.historico', 'main.of_refugo', 'main.comparacao_quantidade',
+  'main.comparativo_mensal', 'main.analise'
+] %}
+{% set setor_custos = ep.startswith('relatorio') or ep.startswith('custos_papel') or ep.startswith('custos_operacionais') %}
+{% set setor_pedidos = ep in ['main.pedidos', 'main.movimento', 'main.atualizar_movimento'] %}
+{% set pode_ver_pedidos = current_user.is_authenticated and current_user.role != 'inicial' %}
+<div class="header">
+  <div class="header-brand">
+    <a href="{{ url_for('main.index') }}" class="logo logo-link {% if setor_producao %}active{% endif %}">PRODUÇÃO</a>
+    <a href="{{ url_for('relatorio.lancamento_custo') }}" class="logo logo-link {% if setor_custos %}active{% endif %}">Custos</a>
+    {% if pode_ver_pedidos %}
+    <a href="{{ url_for('main.pedidos') }}" class="logo logo-link {% if setor_pedidos %}active{% endif %}">Pedidos</a>
+    {% endif %}
+    {% if current_user.is_authenticated and current_user.is_admin %}
+    <a href="{{ url_for('auth.admin_usuarios') }}" class="logo logo-link {% if ep == 'auth.admin_usuarios' %}active{% endif %}">Usuários</a>
+    {% endif %}
+  </div>
+  <nav class="tabs">
+    {% if setor_producao %}
+      <a href="{{ url_for('main.index') }}" class="tab {% if ep in ['main.index', 'main.duplicar', 'main.lancar', 'main.editar'] %}active{% endif %}">Lançamento</a>
+      <a href="{{ url_for('main.lancamento_diario') }}" class="tab {% if ep == 'main.lancamento_diario' %}active{% endif %}">Lançamento Diário</a>
+      <a href="{{ url_for('main.display_diario') }}" class="tab {% if ep == 'main.display_diario' %}active{% endif %}">Display Diário</a>
+      <a href="{{ url_for('main.historico') }}" class="tab {% if ep == 'main.historico' %}active{% endif %}">Histórico</a>
+      <a href="{{ url_for('main.of_refugo') }}" class="tab {% if ep == 'main.of_refugo' %}active{% endif %}">OF-Refugo</a>
+      <a href="{{ url_for('main.comparacao_quantidade') }}" class="tab {% if ep == 'main.comparacao_quantidade' %}active{% endif %}">Comparação Quantidade</a>
+      <a href="{{ url_for('main.comparativo_mensal') }}" class="tab {% if ep == 'main.comparativo_mensal' %}active{% endif %}">Comparativo Mensal</a>
+      <a href="{{ url_for('main.analise') }}" class="tab {% if ep == 'main.analise' %}active{% endif %}">Análise</a>
+    {% elif setor_custos %}
+      <a href="{{ url_for('relatorio.lancamento_custo') }}" class="tab {% if ep == 'relatorio.lancamento_custo' %}active{% endif %}">Lançamento de Custo</a>
+      <a href="{{ url_for('custos_papel.configurar_custos') }}" class="tab {% if ep.startswith('custos_papel') %}active{% endif %}">Custo Papel</a>
+      <a href="{{ url_for('custos_operacionais.configurar_custo_operacional') }}" class="tab {% if ep.startswith('custos_operacionais') %}active{% endif %}">Custos Adicionais</a>
+    {% elif setor_pedidos and pode_ver_pedidos %}
+      <a href="{{ url_for('main.pedidos') }}" class="tab {% if ep == 'main.pedidos' %}active{% endif %}">Pedidos</a>
+      <a href="{{ url_for('main.movimento') }}" class="tab {% if ep == 'main.movimento' %}active{% endif %}">Movimento</a>
+    {% endif %}
+  </nav>
+  <div class="header-user" style="display:flex; align-items:center; gap:10px; font-size:13px;">
+    {% if current_user.is_authenticated %}
+      <a href="{{ url_for('auth.configuracoes') }}" title="Configurações"
+         style="display:inline-flex; align-items:center; color:#1a2b3c; text-decoration:none;"
+         aria-label="Configurações">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </a>
+      <a href="{{ url_for('auth.configuracoes') }}" style="color:#1a2b3c; text-decoration:none;">{{ current_user.nome }}</a>
+      <form action="{{ url_for('auth.logout') }}" method="post" style="display:inline;margin:0;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-secondary" style="padding:4px 10px; font-size:12px;">Sair</button>
+      </form>
+    {% endif %}
+  </div>
+</div>

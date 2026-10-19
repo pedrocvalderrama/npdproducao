@@ -1,0 +1,83 @@
+{# Fragmento com paginação + tabela de Comparação Quantidade (Fase 4 — HTMX). #}
+<div class="card pagination-bar" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+    <span>{{ total_registros }} registro(s) encontrado(s) — página {{ page }} de {{ total_paginas }} ({{ per_page }} por página)</span>
+    <div style="display:flex; gap:6px;">
+        {% if page > 1 %}
+        <a class="btn btn-secondary" href="{{ url_for('main.comparacao_quantidade', page=1, **pagination_args) }}" hx-get="{{ url_for('main.comparacao_quantidade', page=1, **pagination_args) }}" hx-target="#comparacao-resultado" hx-push-url="true">&laquo; Primeira</a>
+        <a class="btn btn-secondary" href="{{ url_for('main.comparacao_quantidade', page=page-1, **pagination_args) }}" hx-get="{{ url_for('main.comparacao_quantidade', page=page-1, **pagination_args) }}" hx-target="#comparacao-resultado" hx-push-url="true">&lsaquo; Anterior</a>
+        {% endif %}
+        {% if page < total_paginas %}
+        <a class="btn btn-secondary" href="{{ url_for('main.comparacao_quantidade', page=page+1, **pagination_args) }}" hx-get="{{ url_for('main.comparacao_quantidade', page=page+1, **pagination_args) }}" hx-target="#comparacao-resultado" hx-push-url="true">Próxima &rsaquo;</a>
+        <a class="btn btn-secondary" href="{{ url_for('main.comparacao_quantidade', page=total_paginas, **pagination_args) }}" hx-get="{{ url_for('main.comparacao_quantidade', page=total_paginas, **pagination_args) }}" hx-target="#comparacao-resultado" hx-push-url="true">Última &raquo;</a>
+        {% endif %}
+    </div>
+</div>
+<div id="table-wrapper-comparacao" class="table-responsive card comparacao-table-card">
+    <table class="tabela">
+        <thead>
+            <tr>
+            {% if lancamentos %}
+                {% set column_order = ['num_of', 'servico', 'numero_pedido', 'quantidade_comanda', 'quantidade_impressora', 'quantidade', 'refugo_sos_pecas', 'diferenca', 'observacoes'] %}
+                {% set sticky_left_cols = ['num_of', 'servico'] %}
+                {% for key in column_order %}
+                    {% if key in lancamentos[0] %}
+                    {% set header_title = none %}
+                    {% if key == 'refugo_sos_pecas' %}{% set header_title = 'Cálculo: (Refugo Acerto SOS + Refugo Pré-Impresso + Refugo SOS) em kg × 1000 ÷ Peso Milheiro, arredondado para cima (peças)' %}{% endif %}
+                    {% if key == 'diferenca' %}{% set header_title = 'Cálculo: (Quantidade SOS + Refugo SOS Peças) − Quantidade Impressora' %}{% endif %}
+                    {% set sort_href = url_for('main.comparacao_quantidade', sort_by=key, sort_order='desc' if request.args.get('sort_by') == key and request.args.get('sort_order') == 'asc' else 'asc', **preserved_args) %}
+                    <th data-column="{{ key }}" {% if key == 'observacoes' or key in sticky_left_cols %}class="{% if key == 'observacoes' %}col-observacoes{% endif %}{% if key in sticky_left_cols %} sticky-left{% endif %}"{% endif %}{% if header_title %} title="{{ header_title }}"{% endif %}><a href="{{ sort_href }}" hx-get="{{ sort_href }}" hx-target="#comparacao-resultado" hx-push-url="true"{% if header_title %} title="{{ header_title }}"{% endif %}>
+                        {% if key == 'num_of' %}Nº OF
+                        {% elif key == 'numero_pedido' %}Número do Pedido
+                        {% elif key == 'quantidade_comanda' %}Quantidade Comanda
+                        {% elif key == 'quantidade_impressora' %}Quantidade Impressora
+                        {% elif key == 'quantidade' %}Quantidade SOS
+                        {% elif key == 'refugo_sos_pecas' %}Refugo SOS Peças
+                        {% elif key == 'diferenca' %}Diferença
+                        {% elif key == 'observacoes' %}Observações
+                        {% else %}{{ key|replace('_', ' ')|capitalize }}
+                        {% endif %}</a></th>
+                    {% endif %}
+                {% endfor %}
+                <th class="th-actions">Ações</th>
+            {% else %}<th>Nenhum dado para exibir</th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for lancamento in lancamentos %}
+            <tr>
+                {% set sticky_left_cols = ['num_of', 'servico'] %}
+                {% for key in column_order %}
+                    {% if key in lancamento %}
+                    {% set cell_class = '' %}
+                    {% if key in sticky_left_cols %}
+                        {% set cell_class = 'sticky-left' %}
+                    {% elif key == 'observacoes' %}
+                        {% set cell_class = 'col-observacoes' %}
+                    {% elif key == 'diferenca' and lancamento[key] is not none %}
+                        {% set v = lancamento[key]|float %}
+                        {% if v <= -150 %}{% set cell_class = 'diff-rosa' %}
+                        {% elif v >= -149 and v <= -100 %}{% set cell_class = 'diff-laranja' %}
+                        {% elif v >= 100 and v <= 149 %}{% set cell_class = 'diff-amarelo' %}
+                        {% elif v >= 150 %}{% set cell_class = 'diff-vermelho' %}
+                        {% endif %}
+                    {% endif %}
+                    <td class="{% if cell_class %}{{ cell_class }}{% endif %}" {% if key in sticky_left_cols %}data-column="{{ key }}"{% endif %}>
+                        {% if key == 'numero_pedido' and lancamento[key] is not none %}
+                            {{ "%.0f"|format(lancamento[key]|float) }}
+                        {% elif key in ['quantidade_comanda', 'quantidade', 'quantidade_impressora', 'refugo_sos_pecas', 'diferenca'] and lancamento[key] is not none %}
+                            {{ "%.0f"|format(lancamento[key]|float) }}
+                        {% else %}
+                            {{ lancamento[key] if lancamento[key] is not none else '' }}
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                {% endfor %}
+                <td class="actions-cell">
+                    <a href="{{ url_for('main.editar', id=lancamento.id) }}" class="btn-acao btn-editar" title="Editar"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></a>
+                    <form action="{{ url_for('main.excluir', id=lancamento.id) }}" method="post" onsubmit="return confirm('Tem certeza?');" style="display:inline;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="btn-acao btn-excluir" title="Excluir"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button></form>
+                </td>
+            </tr>
+            {% else %}<tr><td colspan="12">Nenhum registro encontrado.</td></tr>{% endfor %}
+        </tbody>
+    </table>
+</div>

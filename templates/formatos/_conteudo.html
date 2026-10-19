@@ -1,0 +1,159 @@
+<div class="card" id="formatos">
+    <div class="card-header">{% if formato_edit %}Editar Formato{% else %}Cadastrar Novo Formato{% endif %}</div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('formatos.configurar_formatos') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% if formato_edit %}
+            <input type="hidden" name="formato_id" value="{{ formato_edit.id }}">
+            {% endif %}
+            <div class="row g-2 mb-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="descricao">Descrição (string canônica)</label>
+                    <input type="text" name="descricao" id="descricao" class="form-control"
+                           placeholder="ex.: 33X40X15" required
+                           value="{{ formato_edit.descricao if formato_edit else '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="largura_bobina">Largura Bobina (cm)</label>
+                    <input type="number" step="0.01" min="0.01" name="largura_bobina" id="largura_bobina"
+                           class="form-control" placeholder="ex.: 90" required
+                           value="{{ formato_edit.largura_bobina if formato_edit else '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="velocidade_ideal">Velocidade Ideal (un/h)</label>
+                    <input type="number" step="1" min="1" name="velocidade_ideal" id="velocidade_ideal"
+                           class="form-control" placeholder="ex.: 3700" required
+                           value="{{ formato_edit.velocidade_ideal if formato_edit else '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="area_folha">Área da folha (cm²)</label>
+                    <input type="number" step="0.01" min="0.01" id="area_folha" class="form-control"
+                           placeholder="ex.: 4455" autocomplete="off">
+                    <div class="form-text" style="font-size:0.75rem;">Só nesta tela: ao sair do campo, preenche as tolerâncias.</div>
+                </div>
+            </div>
+
+            <h6 class="mt-3 mb-2">Tolerância de milheiro por papel</h6>
+            <p class="text-muted" style="font-size:0.8rem;">
+                Preencha mínimo e máximo (kg) só para os papéis usados neste formato. Linha vazia não grava tolerância.
+                Com a área da folha preenchida: Min = floor((área×gramatura)/10000 − 2), Max = ceil((área×gramatura)/10000 + 2).
+            </p>
+            <div class="table-responsive mb-3">
+                <table class="table table-sm table-bordered align-middle" id="tabela-tolerancias">
+                    <thead>
+                        <tr>
+                            <th>Papel</th>
+                            <th style="width:160px;">Mín (kg)</th>
+                            <th style="width:160px;">Máx (kg)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for papel in papeis %}
+                        {% set tol = tol_mapa.get(papel) if tol_mapa else none %}
+                        <tr data-papel="{{ papel }}">
+                            <td>{{ papel }}</td>
+                            <td>
+                                <input type="number" step="0.01" min="0" class="form-control form-control-sm tol-min"
+                                       name="tol_min[{{ papel }}]" placeholder="mín"
+                                       value="{{ tol.min_kg if tol else '' }}">
+                            </td>
+                            <td>
+                                <input type="number" step="0.01" min="0" class="form-control form-control-sm tol-max"
+                                       name="tol_max[{{ papel }}]" placeholder="máx"
+                                       value="{{ tol.max_kg if tol else '' }}">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if formato_edit %}
+            <button type="submit" class="btn btn-warning">Atualizar</button>
+            <a href="{{ url_for('auth.configuracoes') }}#formatos" class="btn btn-outline-secondary">Cancelar</a>
+            {% else %}
+            <button type="submit" class="btn btn-primary">Criar</button>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">Formatos cadastrados nesta tela</div>
+    <div class="card-body">
+        {% if formatos %}
+        <div class="table-responsive table-wrapper">
+            <table class="table table-striped table-bordered table-sm">
+                <thead>
+                    <tr>
+                        <th>Descrição</th>
+                        <th>Largura (cm)</th>
+                        <th>Velocidade (un/h)</th>
+                        <th>Tolerâncias</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in formatos %}
+                    <tr>
+                        <td>{{ f.descricao }}</td>
+                        <td>{{ f.largura_bobina }}</td>
+                        <td>{{ f.velocidade_ideal }}</td>
+                        <td style="white-space:normal;">
+                            {% if f.tolerancias %}
+                                {% for t in f.tolerancias %}
+                                    <div>{{ t.papel }}: {{ "%.2f"|format(t.min_kg) }} – {{ "%.2f"|format(t.max_kg) }} kg</div>
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('auth.configuracoes', editar=f.id) }}#formatos"
+                               class="btn btn-sm btn-warning">Editar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Nenhum formato cadastrado ainda. Os formatos padrão do sistema continuam disponíveis no lançamento.</p>
+        {% endif %}
+    </div>
+</div>
+<script>
+(function () {
+    const areaInput = document.getElementById('area_folha');
+    if (!areaInput) return;
+
+    function gramaturaDoPapel(nome) {
+        const m = String(nome || '').match(/(\d+(?:[.,]\d+)?)/);
+        if (!m) return null;
+        const g = parseFloat(m[1].replace(',', '.'));
+        return Number.isFinite(g) && g > 0 ? g : null;
+    }
+
+    function preencherTolerancias() {
+        const area = parseFloat(String(areaInput.value).replace(',', '.'));
+        if (!Number.isFinite(area) || area <= 0) return;
+
+        document.querySelectorAll('#tabela-tolerancias tbody tr').forEach(function (tr) {
+            const papel = tr.getAttribute('data-papel');
+            const gramatura = gramaturaDoPapel(papel);
+            if (gramatura == null) return;
+
+            const base = (area * gramatura) / 10000;
+            const minKg = Math.floor(base - 2);
+            const maxKg = Math.ceil(base + 2);
+            const minInput = tr.querySelector('.tol-min');
+            const maxInput = tr.querySelector('.tol-max');
+            if (minInput) minInput.value = minKg;
+            if (maxInput) maxInput.value = maxKg;
+        });
+    }
+
+    areaInput.addEventListener('blur', preencherTolerancias);
+    areaInput.addEventListener('change', preencherTolerancias);
+})();
+</script>

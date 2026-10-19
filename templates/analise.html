@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PRODUÇÃO - Análise</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/analise.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+  <style>
+    .btn-success { background-color: #28a745; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 14px; cursor: pointer; display: inline-block; }
+    .btn-success:hover { background-color: #218838; color: #fff; }
+    .section-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <div id="sos-filter-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Filtros - Análise SOS</h2>
+        <button class="modal-close" onclick="document.getElementById('sos-filter-modal').style.display='none'">&times;</button>
+      </div>
+      <form id="sos-filter-form" method="get" action="{{ action_url }}">
+        <!-- Preserva todos os filtros existentes exceto os de SOS -->
+        {% for key, value in request.args.items() %}
+          {% if not key.startswith('sos_') %}
+            {% if value is iterable and value is not string %}
+              {% for v in value %}
+                <input type="hidden" name="{{ key }}" value="{{ v }}">
+              {% endfor %}
+            {% else %}
+              <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        <div class="modal-body">
+          <div class="filter-group" style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+              <label>Serviço:</label>
+              <input type="text" name="sos_servico" value="{{ request.args.get('sos_servico', '') }}" placeholder="Digite parte do nome do serviço" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+            </div>
+            <div>
+              <label>Nº de OF:</label>
+              <input type="text" name="sos_num_of" value="{{ request.args.get('sos_num_of', '') }}" placeholder="Digite o Nº de OF" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+            </div>
+          </div>
+          <div class="filter-group">
+            <label><strong>Data SOS</strong></label>
+            <label style="font-weight: normal; margin-top: 5px; font-size: 12px;">Período SOS (De):</label>
+            <input type="date" name="sos_start_date" value="{{ request.args.get('sos_start_date', '') }}" style="margin-bottom: 10px;">
+            <label style="font-weight: normal; font-size: 12px;">Período SOS (Até):</label>
+            <input type="date" name="sos_end_date" value="{{ request.args.get('sos_end_date', '') }}">
+          </div>
+          <div class="filter-group">
+            <label>Operador:</label>
+            <div class="checkbox-container">
+              {% for op in operadores_sos %}
+              <label class="checkbox-item">
+                <input type="checkbox" name="sos_operadores" value="{{ op }}" {% if op in request.args.getlist('sos_operadores') %}checked{% endif %}> {{ op }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="filter-group">
+            <label>SOS:</label>
+            <div class="checkbox-container">
+              {% for sos_opt in maquinas_sos %}
+              <label class="checkbox-item">
+                <input type="checkbox" name="sos_maquinas" value="{{ sos_opt }}" {% if sos_opt in request.args.getlist('sos_maquinas') %}checked{% endif %}> {{ sos_opt }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('sos-filter-modal').style.display='none'">Fechar</button>
+          <button type="submit" class="btn">Filtrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div id="impressora-filter-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Filtros - Análise Impressora</h2>
+        <button class="modal-close" onclick="document.getElementById('impressora-filter-modal').style.display='none'">&times;</button>
+      </div>
+      <form id="impressora-filter-form" method="get" action="{{ action_url }}">
+        <!-- Preserva todos os filtros existentes exceto os de impressora -->
+        {% for key, value in request.args.items() %}
+          {% if not key.startswith('impressora_') %}
+            {% if value is iterable and value is not string %}
+              {% for v in value %}
+                <input type="hidden" name="{{ key }}" value="{{ v }}">
+              {% endfor %}
+            {% else %}
+              <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        <div class="modal-body">
+          <div class="filter-group" style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+              <label>Serviço:</label>
+              <input type="text" name="impressora_servico" value="{{ request.args.get('impressora_servico', '') }}" placeholder="Digite parte do nome do serviço" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+            </div>
+            <div>
+              <label>Nº de OF:</label>
+              <input type="text" name="impressora_num_of" value="{{ request.args.get('impressora_num_of', '') }}" placeholder="Digite o Nº de OF" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+            </div>
+          </div>
+          <div class="filter-group">
+            <label><strong>Data Impressora</strong></label>
+            <label style="font-weight: normal; margin-top: 5px; font-size: 12px;">Período Impressora (De):</label>
+            <input type="date" name="impressora_start_date_impressora" value="{{ request.args.get('impressora_start_date_impressora', '') }}" style="margin-bottom: 10px;">
+            <label style="font-weight: normal; font-size: 12px;">Período Impressora (Até):</label>
+            <input type="date" name="impressora_end_date_impressora" value="{{ request.args.get('impressora_end_date_impressora', '') }}">
+          </div>
+          <div class="filter-group">
+            <label>Operador:</label>
+            <div class="checkbox-container">
+              {% for op in operadores_impressora %}
+              <label class="checkbox-item">
+                <input type="checkbox" name="impressora_operadores" value="{{ op }}" {% if op in request.args.getlist('impressora_operadores') %}checked{% endif %}> {{ op }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('impressora-filter-modal').style.display='none'">Fechar</button>
+          <button type="submit" class="btn">Filtrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div id="operator-filter-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Filtros - Análise por Operador SOS</h2>
+        <button class="modal-close" onclick="document.getElementById('operator-filter-modal').style.display='none'">&times;</button>
+      </div>
+      <form id="operator-filter-form" method="get" action="{{ action_url }}">
+        <!-- Preserva todos os filtros existentes exceto os de operador -->
+        {% for key, value in request.args.items() %}
+          {% if not key.startswith('operator_') %}
+            {% if value is iterable and value is not string %}
+              {% for v in value %}
+                <input type="hidden" name="{{ key }}" value="{{ v }}">
+              {% endfor %}
+            {% else %}
+              <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        <div class="modal-body">
+          <div class="filter-group" style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+              <label>Serviço:</label>
+              <input type="text" name="operator_servico" value="{{ request.args.get('operator_servico', '') }}" placeholder="Digite parte do nome do serviço" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+            </div>
+            <div>
+              <label>Nº de OF:</label>
+              <input type="text" name="operator_num_of" value="{{ request.args.get('operator_num_of', '') }}" placeholder="Digite o Nº de OF" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+            </div>
+          </div>
+          <div class="filter-group">
+            <label><strong>Data SOS</strong></label>
+            <label style="font-weight: normal; margin-top: 5px; font-size: 12px;">Período SOS (De):</label>
+            <input type="date" name="operator_start_date" value="{{ request.args.get('operator_start_date', '') }}" style="margin-bottom: 10px;">
+            <label style="font-weight: normal; font-size: 12px;">Período SOS (Até):</label>
+            <input type="date" name="operator_end_date" value="{{ request.args.get('operator_end_date', '') }}">
+          </div>
+          <div class="filter-group">
+            <label>Operador:</label>
+            <div class="checkbox-container">
+              {% for op in all_operadores_sos %}
+              <label class="checkbox-item">
+                <input type="checkbox" name="operator_operadores" value="{{ op }}" {% if op in request.args.getlist('operator_operadores') %}checked{% endif %}> {{ op }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="filter-group">
+            <label>SOS:</label>
+            <div class="checkbox-container">
+              {% for sos_opt in maquinas_sos %}
+              <label class="checkbox-item">
+                <input type="checkbox" name="operator_maquinas" value="{{ sos_opt }}" {% if sos_opt in request.args.getlist('operator_maquinas') %}checked{% endif %}> {{ sos_opt }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('operator-filter-modal').style.display='none'">Fechar</button>
+          <button type="submit" class="btn">Filtrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div id="robo-filter-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Filtros - Análise Robô</h2>
+        <button class="modal-close" onclick="document.getElementById('robo-filter-modal').style.display='none'">&times;</button>
+      </div>
+      <form id="robo-filter-form" method="get" action="{{ action_url }}">
+        {% for key, value in request.args.items() %}
+          {% if not key.startswith('robo_') %}
+            {% if value is iterable and value is not string %}
+              {% for v in value %}
+                <input type="hidden" name="{{ key }}" value="{{ v }}">
+              {% endfor %}
+            {% else %}
+              <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        <div class="modal-body">
+          <div class="filter-group" style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+              <label>Serviço:</label>
+              <input type="text" name="robo_servico" value="{{ request.args.get('robo_servico', '') }}" placeholder="Digite parte do nome do serviço" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+            </div>
+            <div>
+              <label>Nº de OF:</label>
+              <input type="text" name="robo_num_of" value="{{ request.args.get('robo_num_of', '') }}" placeholder="Digite o Nº de OF" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+            </div>
+          </div>
+          <div class="filter-group">
+            <label><strong>Data Robô</strong></label>
+            <label style="font-weight: normal; margin-top: 5px; font-size: 12px;">Período Robô (De):</label>
+            <input type="date" name="robo_start_date_robo" value="{{ request.args.get('robo_start_date_robo', '') }}" style="margin-bottom: 10px;">
+            <label style="font-weight: normal; font-size: 12px;">Período Robô (Até):</label>
+            <input type="date" name="robo_end_date_robo" value="{{ request.args.get('robo_end_date_robo', '') }}">
+          </div>
+          <div class="filter-group">
+            <label>Operador:</label>
+            <div class="checkbox-container">
+              {% for op in operadores_robo %}
+              <label class="checkbox-item">
+                <input type="checkbox" name="robo_operadores" value="{{ op }}" {% if op in request.args.getlist('robo_operadores') %}checked{% endif %}> {{ op }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('robo-filter-modal').style.display='none'">Fechar</button>
+          <button type="submit" class="btn">Filtrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div id="operator-impressora-filter-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Filtros - Análise por Operador Impressora</h2>
+        <button class="modal-close" onclick="document.getElementById('operator-impressora-filter-modal').style.display='none'">&times;</button>
+      </div>
+      <form id="operator-impressora-filter-form" method="get" action="{{ action_url }}">
+        <!-- Preserva todos os filtros existentes exceto os de operador impressora -->
+        {% for key, value in request.args.items() %}
+          {% if not key.startswith('operator_impressora_') %}
+            {% if value is iterable and value is not string %}
+              {% for v in value %}
+                <input type="hidden" name="{{ key }}" value="{{ v }}">
+              {% endfor %}
+            {% else %}
+              <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        <div class="modal-body">
+          <div class="filter-group" style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+              <label>Serviço:</label>
+              <input type="text" name="operator_impressora_servico" value="{{ request.args.get('operator_impressora_servico', '') }}" placeholder="Digite parte do nome do serviço" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+            </div>
+            <div>
+              <label>Nº de OF:</label>
+              <input type="text" name="operator_impressora_num_of" value="{{ request.args.get('operator_impressora_num_of', '') }}" placeholder="Digite o Nº de OF" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+            </div>
+          </div>
+          <div class="filter-group">
+            <label><strong>Data Impressora</strong></label>
+            <label style="font-weight: normal; margin-top: 5px; font-size: 12px;">Período Impressora (De):</label>
+            <input type="date" name="operator_impressora_start_date_impressora" value="{{ request.args.get('operator_impressora_start_date_impressora', '') }}" style="margin-bottom: 10px;">
+            <label style="font-weight: normal; font-size: 12px;">Período Impressora (Até):</label>
+            <input type="date" name="operator_impressora_end_date_impressora" value="{{ request.args.get('operator_impressora_end_date_impressora', '') }}">
+          </div>
+          <div class="filter-group">
+            <label>Operador:</label>
+            <div class="checkbox-container">
+              {% for op in operadores_impressora %}
+              <label class="checkbox-item">
+                <input type="checkbox" name="operator_impressora_operadores" value="{{ op }}" {% if op in request.args.getlist('operator_impressora_operadores') %}checked{% endif %}> {{ op }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('operator-impressora-filter-modal').style.display='none'">Fechar</button>
+          <button type="submit" class="btn">Filtrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="container">
+    {% include 'partials/header_nav.html' %}
+    <div class="analysis-grid">
+        <div class="card summary-table-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">Análise por SOS</h3>
+                <div class="section-actions">
+                    <button class="btn btn-secondary" onclick="document.getElementById('sos-filter-modal').style.display='flex'">Filtros</button>
+                    <a href="{{ url_for('main.analise', export='excel', section='sos', **preserved_args) }}" class="btn btn-success">Exportar Excel</a>
+                    <a href="#" onclick="clearSosFilters(); return false;" class="btn btn-icon btn-warning" title="Limpar Filtros SOS"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/></svg></a>
+                </div>
+            </div>
+            {% if machine_summary %}
+            <table class="summary-table">
+                <thead><tr><th>SOS</th><th class="text-right">Média de Sacos p/ Min</th><th class="text-right">Contagem de Serviços</th><th class="text-right">Média de Refugo</th><th class="text-right">Soma de Quantidade SOS</th><th class="text-right">Média de Acerto</th></tr></thead>
+                <tbody>
+                    {% for row in machine_summary %}
+                    <tr>
+                        <td>{{ row.sos }}</td>
+                        <td class="text-right">{{ "%.2f"|format(row.media_sacos_p_min|float) }}</td>
+                        <td class="text-right">{{ row.contagem_servico }}</td>
+                        <td class="text-right">{{ "%.2f"|format(row.media_percentual_refugo|float) }}%</td>
+                        <td class="text-right">{{ "{:,.0f}".format(row.soma_quant)|replace(',', '.') }}</td>
+                        <td class="text-right">{{ row.media_tempo_acerto }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot><tr><td>{{ machine_total.sos }}</td><td class="text-right">{{ "%.2f"|format(machine_total.media_sacos_p_min|float) }}</td><td class="text-right">{{ machine_total.contagem_servico }}</td><td class="text-right">{{ "%.2f"|format(machine_total.media_percentual_refugo|float) }}%</td><td class="text-right">{{ "{:,.0f}".format(machine_total.soma_quant)|replace(',', '.') }}</td><td class="text-right">{{ machine_total.media_tempo_acerto }}</td></tr></tfoot>
+            </table>
+            {% else %}<p>Nenhum dado encontrado para o período e filtros selecionados.</p>{% endif %}
+        </div>
+        <div class="card summary-table-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">Análise Impressora</h3>
+                <div class="section-actions">
+                    <button class="btn btn-secondary" onclick="document.getElementById('impressora-filter-modal').style.display='flex'">Filtros</button>
+                    <a href="{{ url_for('main.analise', export='excel', section='impressora', **preserved_args) }}" class="btn btn-success">Exportar Excel</a>
+                    <a href="#" onclick="clearImpressoraFilters(); return false;" class="btn btn-icon btn-warning" title="Limpar Filtros Impressora"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/></svg></a>
+                </div>
+            </div>
+            {% if impressora_summary %}
+            <table class="summary-table">
+                <thead><tr><th>Impressora</th><th class="text-right">Média de Sacos p/ Min</th><th class="text-right">Contagem de Serviços</th><th class="text-right">Média de Refugo</th><th class="text-right">Soma de Quantidade Impressora</th><th class="text-right">Média de Acerto</th></tr></thead>
+                <tbody>
+                    {% for row in impressora_summary %}
+                    <tr>
+                        <td>{{ row.impressora }}</td>
+                        <td class="text-right">{{ "%.2f"|format(row.media_sacos_p_min|float) }}</td>
+                        <td class="text-right">{{ row.contagem_servico }}</td>
+                        <td class="text-right">{{ "%.2f"|format(row.media_percentual_refugo|float) }}%</td>
+                        <td class="text-right">{{ "{:,.0f}".format(row.soma_quant)|replace(',', '.') }}</td>
+                        <td class="text-right">{{ row.media_tempo_acerto }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot><tr><td>{{ impressora_total.impressora }}</td><td class="text-right">{{ "%.2f"|format(impressora_total.media_sacos_p_min|float) }}</td><td class="text-right">{{ impressora_total.contagem_servico }}</td><td class="text-right">{{ "%.2f"|format(impressora_total.media_percentual_refugo|float) }}%</td><td class="text-right">{{ "{:,.0f}".format(impressora_total.soma_quant)|replace(',', '.') }}</td><td class="text-right">{{ impressora_total.media_tempo_acerto }}</td></tr></tfoot>
+            </table>
+            {% else %}<p>Nenhum dado encontrado para o período e filtros selecionados.</p>{% endif %}
+        </div>
+        <div class="card summary-table-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">Análise Robô</h3>
+                <div class="section-actions">
+                    <button class="btn btn-secondary" onclick="document.getElementById('robo-filter-modal').style.display='flex'">Filtros</button>
+                    <a href="{{ url_for('main.analise', export='excel', section='robo', **preserved_args) }}" class="btn btn-success">Exportar Excel</a>
+                    <a href="#" onclick="clearRoboFilters(); return false;" class="btn btn-icon btn-warning" title="Limpar Filtros Robô"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/></svg></a>
+                </div>
+            </div>
+            {% if robo_summary %}
+            <table class="summary-table">
+                <thead><tr><th>Robô</th><th class="text-right">Contagem de Serviços</th><th class="text-right">Refugo Peças</th><th class="text-right">Soma da Quantidade Robô</th></tr></thead>
+                <tbody>
+                    {% for row in robo_summary %}
+                    <tr>
+                        <td>{{ row.robo }}</td>
+                        <td class="text-right">{{ row.contagem_servico }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(row.refugo_pecas)|replace(',', '.') }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(row.soma_quantidade_robo)|replace(',', '.') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if robo_total %}
+                <tfoot><tr><td>{{ robo_total.robo }}</td><td class="text-right">{{ robo_total.contagem_servico }}</td><td class="text-right">{{ "{:,.0f}".format(robo_total.refugo_pecas)|replace(',', '.') }}</td><td class="text-right">{{ "{:,.0f}".format(robo_total.soma_quantidade_robo)|replace(',', '.') }}</td></tr></tfoot>
+                {% endif %}
+            </table>
+            {% else %}<p>Nenhum dado encontrado para o período e filtros selecionados.</p>{% endif %}
+        </div>
+        <div class="card summary-table-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">Análise por Operador SOS</h3>
+                <div class="section-actions">
+                    <button class="btn btn-secondary" onclick="document.getElementById('operator-filter-modal').style.display='flex'">Filtros</button>
+                    <a href="{{ url_for('main.analise', export='excel', section='operator_sos', **preserved_args) }}" class="btn btn-success">Exportar Excel</a>
+                    <a href="#" onclick="clearOperatorFilters(); return false;" class="btn btn-icon btn-warning" title="Limpar Filtros de Operador"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/></svg></a>
+                </div>
+            </div>
+            {% if operator_summary %}
+            <table class="summary-table">
+                <thead><tr><th>Operador</th><th class="text-right">Média de Sacos p/ Min</th><th class="text-right">Contagem de Serviços</th><th class="text-right">Média de Refugo</th><th class="text-right">Média de Acerto</th></tr></thead>
+                <tbody>
+                    {% for row in operator_summary %}
+                    <tr>
+                        <td>{{ row.operador }}</td>
+                        <td class="text-right">{{ "%.2f"|format(row.media_sacos_p_min|float) }}</td>
+                        <td class="text-right">{{ row.contagem_servico }}</td>
+                        <td class="text-right">{{ "%.2f"|format(row.media_percentual_refugo|float) }}%</td>
+                        <td class="text-right">{{ row.media_total_acerto }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot><tr><td>{{ operator_total.operador }}</td><td class="text-right">{{ "%.2f"|format(operator_total.media_sacos_p_min|float) }}</td><td class="text-right">{{ operator_total.contagem_servico }}</td><td class="text-right">{{ "%.2f"|format(operator_total.media_percentual_refugo|float) }}%</td><td class="text-right">{{ operator_total.media_total_acerto }}</td></tr></tfoot>
+            </table>
+            {% else %}{% if not machine_summary %}{% else %}<p>Nenhum dado encontrado para o período e filtros selecionados.</p>{% endif %}{% endif %}
+        </div>
+        <div class="card summary-table-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">Análise por Operador Impressora</h3>
+                <div class="section-actions">
+                    <button class="btn btn-secondary" onclick="document.getElementById('operator-impressora-filter-modal').style.display='flex'">Filtros</button>
+                    <a href="{{ url_for('main.analise', export='excel', section='operator_impressora', **preserved_args) }}" class="btn btn-success">Exportar Excel</a>
+                    <a href="#" onclick="clearOperatorImpressoraFilters(); return false;" class="btn btn-icon btn-warning" title="Limpar Filtros de Operador Impressora"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/></svg></a>
+                </div>
+            </div>
+            {% if operator_impressora_summary %}
+            <table class="summary-table">
+                <thead><tr><th>Operador</th><th class="text-right">Média de Sacos p/ Min</th><th class="text-right">Contagem de Serviços</th><th class="text-right">Média de Refugo</th><th class="text-right">Média de Acerto</th></tr></thead>
+                <tbody>
+                    {% for row in operator_impressora_summary %}
+                    <tr>
+                        <td>{{ row.operador }}</td>
+                        <td class="text-right">{{ "%.2f"|format(row.media_sacos_p_min|float) }}</td>
+                        <td class="text-right">{{ row.contagem_servico }}</td>
+                        <td class="text-right">{{ "%.2f"|format(row.media_percentual_refugo|float) }}%</td>
+                        <td class="text-right">{{ row.media_total_acerto }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot><tr><td>{{ operator_impressora_total.operador }}</td><td class="text-right">{{ "%.2f"|format(operator_impressora_total.media_sacos_p_min|float) }}</td><td class="text-right">{{ operator_impressora_total.contagem_servico }}</td><td class="text-right">{{ "%.2f"|format(operator_impressora_total.media_percentual_refugo|float) }}%</td><td class="text-right">{{ operator_impressora_total.media_total_acerto }}</td></tr></tfoot>
+            </table>
+            {% else %}{% if not machine_summary %}{% else %}<p>Nenhum dado encontrado para o período e filtros selecionados.</p>{% endif %}{% endif %}
+        </div>
+    </div>
+  </div>
+  <script>
+    function clearOperatorFilters() {
+      const url = new URL(window.location.href);
+      // Remove todos os parâmetros que começam com 'operator_' (mas não 'operator_impressora_')
+      for (const key of url.searchParams.keys()) {
+        if (key.startsWith('operator_') && !key.startsWith('operator_impressora_')) {
+          url.searchParams.delete(key);
+        }
+      }
+      window.location.href = url.toString();
+    }
+    
+    function clearOperatorImpressoraFilters() {
+      const url = new URL(window.location.href);
+      // Remove todos os parâmetros que começam com 'operator_impressora_'
+      for (const key of url.searchParams.keys()) {
+        if (key.startsWith('operator_impressora_')) {
+          url.searchParams.delete(key);
+        }
+      }
+      window.location.href = url.toString();
+    }
+    
+    function clearSosFilters() {
+      const url = new URL(window.location.href);
+      // Remove todos os parâmetros que começam com 'sos_'
+      for (const key of url.searchParams.keys()) {
+        if (key.startsWith('sos_')) {
+          url.searchParams.delete(key);
+        }
+      }
+      window.location.href = url.toString();
+    }
+    
+    function clearImpressoraFilters() {
+      const url = new URL(window.location.href);
+      // Remove todos os parâmetros que começam com 'impressora_' (mas não 'operator_impressora_')
+      for (const key of url.searchParams.keys()) {
+        if (key.startsWith('impressora_') && !key.startsWith('operator_impressora_')) {
+          url.searchParams.delete(key);
+        }
+      }
+      window.location.href = url.toString();
+    }
+    
+    function clearRoboFilters() {
+      const url = new URL(window.location.href);
+      for (const key of url.searchParams.keys()) {
+        if (key.startsWith('robo_')) {
+          url.searchParams.delete(key);
+        }
+      }
+      window.location.href = url.toString();
+    }
+  </script>
+</body>
+</html> 

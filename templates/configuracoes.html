@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">Configurações</div>
+    <div class="card-body">
+        <p class="text-muted mb-0">Altere a própria senha{% if pode_gerenciar_formatos %} e gerencie os formatos cadastrados{% endif %}.</p>
+    </div>
+</div>
+
+<div class="card mt-3" id="senha">
+    <div class="card-header">Trocar Senha ({{ current_user.nome }})</div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('auth.configuracoes') }}" class="row g-2 mb-3 align-items-end" style="max-width: 420px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="acao" value="trocar_senha">
+            <div class="col-12">
+                <label>Senha atual</label>
+                <input type="password" name="senha_atual" class="form-control" required autocomplete="current-password">
+            </div>
+            <div class="col-12">
+                <label>Nova senha</label>
+                <input type="password" name="nova_senha" class="form-control" required minlength="4" autocomplete="new-password">
+            </div>
+            <div class="col-12">
+                <label>Confirmar nova senha</label>
+                <input type="password" name="confirmar_senha" class="form-control" required minlength="4" autocomplete="new-password">
+            </div>
+            <div class="col-12">
+                <button class="btn btn-primary w-100">Salvar nova senha</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if pode_gerenciar_formatos %}
+<div class="mt-3">
+    {% include 'formatos/_conteudo.html' %}
+</div>
+{% endif %}
+{% endblock %}

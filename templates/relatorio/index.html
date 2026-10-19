@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center; }
+  .modal-content { background: white; padding: 0; border-radius: 8px; width: 95%; max-width: 600px; display: flex; flex-direction: column; margin: 20px; max-height: 95vh; overflow: hidden; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #dee2e6; padding: 20px 20px 10px 20px; margin-bottom: 0; background: white; border-radius: 8px 8px 0 0; flex-shrink: 0; }
+  .modal-close { background: none; border: none; font-size: 28px; cursor: pointer; color: #666; }
+  .modal-body { display: grid; grid-template-columns: 1fr; gap: 15px; padding: 20px; overflow-y: auto; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 10px 20px 20px 20px; margin-top: 0; background: white; border-top: 1px solid #dee2e6; border-radius: 0 0 8px 8px; flex-shrink: 0; }
+  .filter-group { display: flex; flex-direction: column; }
+  .filter-group label { font-weight: 600; margin-bottom: 5px; }
+  .filter-group input[type='date'], .filter-group input[type='text'] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+  .btn { background: #1a73e8; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-size: 13px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+  .btn-secondary { background: #6c757d; }
+</style>
+<div id="filter-modal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Filtros Avançados</h2>
+      <button class="modal-close" onclick="document.getElementById('filter-modal').style.display='none'">&times;</button>
+    </div>
+    <form id="filter-form" method="get" action="{{ url_for('relatorio.historico_custos') }}">
+      <div class="modal-body">
+        <div class="filter-group">
+          <label>Serviço:</label>
+          <input type="text" name="servico" value="{{ request.args.get('servico', '') }}" placeholder="Digite parte do nome do serviço">
+        </div>
+        <div class="filter-group">
+          <label>Nº de OF:</label>
+          <input type="text" name="num_of" value="{{ request.args.get('num_of', '') }}" placeholder="Digite o Nº de OF">
+        </div>
+        <div class="filter-group">
+          <label><strong>Data SOS</strong></label>
+          <label style="font-weight: normal; margin-top: 5px; font-size: 12px;">Período SOS (De):</label>
+          <input type="date" name="start_date" value="{{ request.args.get('start_date', '') }}" style="margin-bottom: 10px;">
+          <label style="font-weight: normal; font-size: 12px;">Período SOS (Até):</label>
+          <input type="date" name="end_date" value="{{ request.args.get('end_date', '') }}">
+        </div>
+        <!-- Preservar filtros de data existentes se não houver filtro de Data SOS -->
+        {% if not request.args.get('start_date') and not request.args.get('end_date') %}
+        <input type="hidden" name="data_inicio" value="{{ ini }}">
+        <input type="hidden" name="data_fim" value="{{ fim }}">
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('filter-modal').style.display='none'">Fechar</button>
+        <button type="submit" class="btn">Filtrar</button>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Relatório de Custos | Custo Operacional Base: <strong>R$ {{ "%.4f"|format(custo_op_un) }}/unid (Total de Despesas)</strong></span>
+        <a href="{{ url_for('relatorio.exportar_custo', data_inicio=ini, data_fim=fim, servico=request.args.get('servico', ''), num_of=request.args.get('num_of', ''), start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-success btn-sm">
+            Exportar CSV
+        </a>
+    </div>
+    <div class="card-body">
+        <form method="GET" class="row g-2 mb-3 align-items-end">
+            <div class="col-md-3">
+                <label>Início</label>
+                <input type="date" name="data_inicio" class="form-control" value="{{ ini }}">
+            </div>
+            <div class="col-md-3">
+                <label>Fim</label>
+                <input type="date" name="data_fim" class="form-control" value="{{ fim }}">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-secondary w-100">Filtrar</button>
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-secondary w-100" onclick="document.getElementById('filter-modal').style.display='flex'">Filtros Avançados</button>
+            </div>
+            <div class="col-md-2">
+                <a href="{{ url_for('relatorio.historico_custos') }}" class="btn btn-outline-secondary w-100">Limpar</a>
+            </div>
+            <!-- Preservar filtros avançados -->
+            {% if request.args.get('servico') %}
+            <input type="hidden" name="servico" value="{{ request.args.get('servico') }}">
+            {% endif %}
+            {% if request.args.get('num_of') %}
+            <input type="hidden" name="num_of" value="{{ request.args.get('num_of') }}">
+            {% endif %}
+            {% if request.args.get('start_date') %}
+            <input type="hidden" name="start_date" value="{{ request.args.get('start_date') }}">
+            {% endif %}
+            {% if request.args.get('end_date') %}
+            <input type="hidden" name="end_date" value="{{ request.args.get('end_date') }}">
+            {% endif %}
+        </form>
+
+        <div class="table-responsive table-wrapper">
+            <table class="table table-bordered table-striped table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th class="table-col-of">OF</th>
+                        <th>Data</th>
+                        <th>Cliente/Serviço</th>
+                        <th>Nº do Pedido</th>
+                        <th>Papel</th>
+                        <th>Formato</th>
+                        <th>Tipo</th>
+                        <th class="table-col-qtd">Qtd</th>
+                        <th>Milheiro</th>
+                        <th title="Refugo da SOS">Ref. SOS</th>
+                        <th title="Refugo da Impressora (Soma da OF)">Ref. Imp.</th>
+                        <th title="Soma dos Refugos">Ref. Total</th>
+                        <th>Consumo Útil</th>
+                        <th>Consumo Total</th>
+                        <th>Custo Papel</th>
+                        <th class="col-destaque-op">Custos Adicionais</th>
+                        <th class="col-destaque-final">Custo Final</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in dados %}
+                    <tr>
+                        <td class="table-col-of">{{ d.num_of }}</td>
+                        <td>{{ d.data }}</td>
+                        <td>{{ d.servico }}</td>
+                        <td>{{ d.numero_pedido if d.numero_pedido else '—' }}</td>
+                        <td>{{ d.papel }}</td>
+                        <td>{{ d.formato }}</td>
+                        <td>{{ d.tipo }}</td>
+                        <td class="table-col-qtd">{{ d.quantidade }}</td>
+                        <td>{{ "%.2f"|format(d.milheiro) }}</td>
+                        <td>{{ "%.2f"|format(d.ref_sos) }}</td>
+                        <td>{{ "%.2f"|format(d.ref_imp) }}</td>
+                        <td style="font-weight:bold">{{ "%.2f"|format(d.ref_total) }}</td>
+                        <td>{{ "%.3f"|format(d.cons_util) }}</td>
+                        <td>{{ "%.3f"|format(d.cons_total) }}</td>
+                        <td>{{ "%.2f"|format(d.custo_mat_total) }}</td>
+                        <td class="col-destaque-op">{{ "%.2f"|format(d.custo_op_total) }}</td>
+                        <td class="col-destaque-final">{{ "%.2f"|format(d.custo_final) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

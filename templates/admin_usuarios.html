@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{{ url_for('auth.admin_api_key') }}" class="btn btn-outline-secondary btn-sm">API de Integrações (chave de acesso)</a>
+</div>
+<div class="card">
+    <div class="card-header">Cadastrar Novo Usuário</div>
+    <div class="card-body">
+        <form method="POST" class="row g-2 mb-3 align-items-end">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="acao" value="criar">
+            <div class="col-md-3">
+                <label>Usuário (login)</label>
+                <input type="text" name="username" class="form-control" placeholder="ex.: financeiro" required>
+            </div>
+            <div class="col-md-3">
+                <label>Nome</label>
+                <input type="text" name="nome" class="form-control" placeholder="Nome de exibição" required>
+            </div>
+            <div class="col-md-2">
+                <label>Senha inicial</label>
+                <input type="text" name="senha" class="form-control" minlength="4" required>
+            </div>
+            <div class="col-md-2">
+                <label>Papel de acesso</label>
+                <select name="role" class="form-select" required>
+                    <option value="inicial">Inicial</option>
+                    <option value="gerente">Gerente</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100">Cadastrar</button>
+            </div>
+        </form>
+        <p class="text-muted" style="font-size: 0.8rem;">
+            <strong>Inicial:</strong> acessa Produção e Custos (inclusive lançamento de custo por pedido), mas não vê as páginas Pedidos/Movimento.
+            <strong>Gerente:</strong> acesso completo. <strong>Admin:</strong> acesso completo + esta tela de cadastro.
+        </p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Usuários Cadastrados</div>
+    <div class="card-body">
+        <div class="table-responsive table-wrapper">
+            <table class="table table-striped table-bordered table-sm">
+                <thead>
+                    <tr><th>Nome</th><th>Usuário</th><th>Papel</th><th>Status</th><th>Redefinir senha</th><th>Ações</th></tr>
+                </thead>
+                <tbody>
+                    {% for u in usuarios %}
+                    <tr>
+                        <td>{{ u.nome }}</td>
+                        <td>{{ u.username }}</td>
+                        <td>{{ role_labels.get(u.role, u.role) }}</td>
+                        <td>{% if u.ativo %}<span class="badge bg-success">Ativo</span>{% else %}<span class="badge bg-secondary">Inativo</span>{% endif %}</td>
+                        <td>
+                            <form method="POST" style="display:flex; gap:4px;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="acao" value="resetar_senha">
+                                <input type="hidden" name="user_id" value="{{ u.id }}">
+                                <input type="text" name="nova_senha_reset" class="form-control form-control-sm" placeholder="nova senha" minlength="4" required style="width:120px;">
+                                <button class="btn btn-sm btn-warning" type="submit">Redefinir</button>
+                            </form>
+                        </td>
+                        <td>
+                            <form method="POST" onsubmit="return confirm('Tem certeza?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="acao" value="alternar_ativo">
+                                <input type="hidden" name="user_id" value="{{ u.id }}">
+                                <button class="btn btn-sm {% if u.ativo %}btn-danger{% else %}btn-success{% endif %}" type="submit" {% if u.id == current_user.id %}disabled title="Você não pode desativar a própria conta"{% endif %}>
+                                    {% if u.ativo %}Desativar{% else %}Ativar{% endif %}
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

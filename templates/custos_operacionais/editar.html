@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">Editar Custo Operacional (ID: {{ custo.id }})</div>
+    <div class="card-body">
+        <form method="POST" class="row g-2 mb-3 align-items-end">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="col-md-4">
+                <label>Despesa</label>
+                <input type="text" name="despesa" class="form-control" value="{{ custo.despesa }}" required>
+            </div>
+            <div class="col-md-3">
+                <label>Custo Unitário (R$)</label>
+                <input type="number" step="0.00001" name="custo_unidade" class="form-control" value="{{ custo.custo_unidade }}" required>
+            </div>
+            <div class="col-md-3">
+                <label>Vigência</label>
+                <input type="date" name="data_registro" class="form-control" value="{{ custo.data_registro }}" required>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-warning w-100">Atualizar</button>
+            </div>
+        </form>
+        <a href="{{ url_for('custos_operacionais.configurar_custo_operacional') }}" class="btn btn-outline-secondary btn-sm">Cancelar</a>
+    </div>
+</div>
+{% endblock %}

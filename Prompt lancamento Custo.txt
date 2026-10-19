@@ -1,0 +1,45 @@
+Tela de lançamento de custo igual tela inicial do programa e mesma lógica de quando colocar o nº OF puxar os dados existentes.
+
+Essa tela deve ter a rota /custo e a tela atual /custo deve ter rota /custo/historico_custos
+
+
+Quando o usuario digitar o nº da OF deve puxar os dados presentes na tabela da pagina /historico, assim como já é feito na tela principal de lancamento.
+
+
+Nessa tela de lancamento de custo deve ter os inputs em um grupo chamado Dados da Comanda oriundos da tabela da pagina /historico:
+
+nº OF, Quantidade SOS, Milheiro, Refugo Acerto Flexo, Refugo Flexo, Refugo acerto SOS, Refugo SOS, Refugo Pré-impresso, Tipo.
+
+
+
+Abaixo deve vir outros inputs em um grupo escrito Dados de Cálculo de Custo oriundos da tela /configurar_custos e /configurar_custo_operacional:
+
+Inputs da tela /configurar_custos:
+Tipo Papel (valores definidos da coluna papel da pagina /configurar_custos), Valor Papel (pegar valor da coluna Custo (R$/kg) referente ao papel selecionado no input anteriro)
+
+Inputs da tela /configurar_custo_operacional:
+Cola, alça, mão de obra alça, Tinta.
+
+Caso no input Tipo, presente no grupo Dados da Comanda for cartucho, setar valor de alça e mão de obra alça como zero.
+
+
+
+Após todos os inputs preenchidos deve haver um visor mostrando o resultado da seguinte fórmula, utilizando os valores preenchidos nos inputs:
+
+Consumos Papel:
+Consumo Útil = (Quantidade SOS / 1000) * Milheiro
+Refugo Total = Refugo Acerto Flexo + Refugo Flexo + Refugo acerto SOS + Refugo SOS + Refugo Pré-impresso.
+
+Custos Separados:
+Custo Papel = (Consumo Útil + Refugo Total) * Valor Papel 
+Custo Tinta = Tinta * Quantidade SOS
+Custo Cola = cola * Quantidade SOS
+Custo Alça = alça * Quantidade SOS
+Custo MDO Alça = mão de obra alça * Quantidade SOS
+
+CUSTO PRÉVIA = Custo Papel + Custo Tinta + Custo Cola + Custo Alça + Custo MDO Alça
+CUSTO MILHEIRO = CUSTO PRÉVIA / (Quantidade SOS / 1000)
+
+O visor deve mostrar em tempo real os valores, conforme o usuario for alterando o preenchimento dos inputs.
+
+

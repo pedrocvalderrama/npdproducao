@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">Editar Custo Papel (ID: {{ custo.id }})</div>
+    <div class="card-body">
+        <form method="POST" class="row g-2 mb-3 align-items-end">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="col-md-4">
+                <label>Papel</label>
+                <select name="papel" class="form-select" required>
+                    <option value="">Selecione o papel</option>
+                    {% for p in papeis %}
+                    <option value="{{ p.papel }}" {% if p.papel == custo.papel %}selected{% endif %}>{{ p.papel }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label>Custo Kg (R$)</label>
+                <input type="number" step="0.01" name="custo_kg" class="form-control" value="{{ custo.custo_kg }}" required>
+            </div>
+            <div class="col-md-3">
+                <label>Vigência</label>
+                <input type="date" name="data_registro" class="form-control" value="{{ custo.data_registro }}" required>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-warning w-100">Atualizar</button>
+            </div>
+        </form>
+        <a href="{{ url_for('custos_papel.configurar_custos') }}" class="btn btn-outline-secondary btn-sm">Cancelar</a>
+    </div>
+</div>
+{% endblock %}

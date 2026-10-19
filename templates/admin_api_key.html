@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">API JSON para Integrações (chave de acesso)</div>
+    <div class="card-body">
+        <p class="text-muted" style="font-size: 0.85rem;">
+            Sistemas externos (BI, automações, outro software da fábrica) podem ler dados de produção,
+            pedidos, movimento e custos em <code>/api/v1/</code> enviando o header
+            <code>X-API-Key</code> com a chave abaixo. Todas as rotas da API são somente leitura
+            (nenhuma altera dados). A lista completa de endpoints está em
+            <a href="/api/v1/" target="_blank">/api/v1/</a> e no README do projeto.
+        </p>
+
+        <label>Chave atual</label>
+        <div class="input-group mb-2" style="max-width: 560px;">
+            <input type="text" id="api-key-valor" class="form-control" value="{{ api_key }}" readonly>
+            <button type="button" class="btn btn-outline-secondary" onclick="copiarApiKey()">Copiar</button>
+        </div>
+
+        {% if fixada_por_env %}
+        <p class="text-muted" style="font-size: 0.8rem;">
+            Esta chave está fixada pela variável de ambiente <code>API_KEY</code> no servidor;
+            para trocá-la, altere a variável de ambiente e reinicie a aplicação.
+        </p>
+        {% else %}
+        <form method="POST" onsubmit="return confirm('Gerar uma nova chave? As integrações que usam a chave atual vão parar de funcionar até serem atualizadas.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-warning btn-sm" type="submit">Gerar nova chave</button>
+        </form>
+        {% endif %}
+
+        <hr>
+        <p style="font-size: 0.85rem;"><strong>Exemplo de chamada (curl):</strong></p>
+        <pre style="background:#f5f5f5; padding:10px; border-radius:4px; font-size:0.8rem;">curl -H "X-API-Key: {{ api_key }}" {{ request.url_root }}api/v1/producao?per_page=10</pre>
+    </div>
+</div>
+
+<script>
+function copiarApiKey() {
+    const input = document.getElementById('api-key-valor');
+    input.select();
+    navigator.clipboard.writeText(input.value);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,197 @@
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+body { background: #f5f5f5; color: #333; font-size: 13px; }
+.card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+.table-responsive.card{padding: 0 0 0 10px;}
+.filter-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.filter-controls-left { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.card-title-center { flex: 1; text-align: center; margin: 0; font-size: 1.25rem; min-width: 0; }
+.btn { background: #1a73e8; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-size: 13px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+.btn-icon { padding: 8px; width: 34px; height: 34px; }
+.btn-success { background: #28a745; }
+.btn-secondary { background: #6c757d; }
+.btn-warning { background: #ffc107; color: #212529; }
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center; }
+.modal-content { background: white; padding: 0; border-radius: 8px; width: 95%; max-width: 1400px; display: flex; flex-direction: column; margin: 20px; max-height: 95vh; overflow: hidden; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #dee2e6; padding: 20px 20px 10px 20px; margin-bottom: 0; background: white; border-radius: 8px 8px 0 0; flex-shrink: 0; }
+.modal-close { font-size: 24px; font-weight: bold; cursor: pointer; border: none; background: none; }
+.modal-body { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; padding: 20px; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 10px 20px 20px 20px; margin-top: 0; background: white; border-top: 1px solid #dee2e6; border-radius: 0 0 8px 8px; flex-shrink: 0; }
+.filter-group { display: flex; flex-direction: column; }
+.filter-group label { font-weight: 600; margin-bottom: 5px; }
+.filter-group input[type='date'] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+.checkbox-container { max-height: 120px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 4px; }
+.checkbox-item { display: block; }
+.table-responsive { max-height: 70vh; overflow-x: auto; overflow-y: auto;}
+.tabela{padding-top: 0;}
+.tabela thead { position: sticky; top: 0; z-index: 2; }
+.tabela { border-collapse: collapse; width: 100%; margin-top: 20px; background: white; }
+.tabela th { background-color: #f8f9fa; font-weight: 600; position: sticky; top: 0; z-index: 1; }
+.tabela th a { color: inherit; text-decoration: none; display: block; padding: 8px 12px; }
+.tabela th a:hover { color: #1a73e8; }
+
+/* Cores pastel para colunas de data (data_inspecao está no bloco Inspeção abaixo) */
+.tabela th[data-column="data_impressora"],
+.tabela th[data-column="data"] {
+    background-color: #d4edda; /* Verde pastel claro */
+}
+
+/* Cores pastel para colunas de quantidade (azul clarinho) - quantidade_robo e quantidade_inspecao_geral em blocos abaixo */
+.tabela th[data-column="quantidade"],
+.tabela th[data-column="quantidade_impressora"],
+.tabela th[data-column="quantidade_comanda"] {
+    background-color: #d1ecf1; /* Azul pastel claro */
+}
+
+/* Cores pastel para as últimas oito colunas (azul clarinho - mesma cor de quantidade_comanda) */
+.tabela th[data-column="inicio_prod_2"],
+.tabela th[data-column="fim_prod_2"],
+.tabela th[data-column="velocidade_un_min"],
+.tabela th[data-column="velocidade_un_min_flexo"],
+.tabela th[data-column="refugo_pct"],
+.tabela th[data-column="refugo_pct_flexo"],
+.tabela th[data-column="eficiencia_pct"],
+.tabela th[data-column="observacoes"] {
+    background-color: #d1ecf1; /* Azul pastel claro */
+}
+
+/* Cores pastel para colunas de impressora até tipo de impressão (laranja clarinho) - robo_alca e operador_robo no bloco Robô abaixo */
+.tabela th[data-column="impressora"],
+.tabela th[data-column="sos"],
+.tabela th[data-column="operador"],
+.tabela th[data-column="operador_impressora"],
+.tabela th[data-column="papel"],
+.tabela th[data-column="formato"],
+.tabela th[data-column="tipo"],
+.tabela th[data-column="qtd_cliches"],
+.tabela th[data-column="milheiro"],
+.tabela th[data-column="tipo_impressao"] {
+    background-color: #ffeaa7; /* Laranja pastel claro */
+}
+
+/* Cores pastel para colunas de refugo (verde clarinho) */
+.tabela th[data-column="refugo_acerto_flexo"],
+.tabela th[data-column="refugo_flexo"],
+.tabela th[data-column="refugo_acerto_sos"],
+.tabela th[data-column="refugo_pre_impresso"],
+.tabela th[data-column="refugo_sos"],
+.tabela th[data-column="refugo_producao_total"] {
+    background-color: #d4edda; /* Verde pastel claro */
+}
+
+/* Cores pastel para colunas de refugo produção até consumo total (azul clarinho) - refugo_robo, refugo_robo_kg e refugo_inspecao em blocos abaixo */
+.tabela th[data-column="perdas_un"],
+.tabela th[data-column="perdas_geral"],
+.tabela th[data-column="perdas_geral_kg"],
+.tabela th[data-column="consumo_util"],
+.tabela th[data-column="consumo_total"] {
+    background-color: #d1ecf1; /* Azul pastel claro - mesma cor para Consumo Util e Consumo Total */
+}
+
+/* Data Inspeção até Refugo Inspeção Final (kg): mesma cor que Data Inspeção (verde pastel) */
+.tabela th[data-column="data_inspecao"],
+.tabela th[data-column="quantidade_inspecao_geral"],
+.tabela th[data-column="refugo_inspecao_final"],
+.tabela th[data-column="refugo_inspecao_final_kg"] {
+    background-color: #d4edda; /* Verde pastel claro */
+}
+
+/* Robô Alça até Refugo Robô (kg): mesma cor que Operador Robô (laranja pastel) */
+.tabela th[data-column="robo_alca"],
+.tabela th[data-column="data_robo"],
+.tabela th[data-column="operador_robo"],
+.tabela th[data-column="quantidade_robo"],
+.tabela th[data-column="refugo_robo"],
+.tabela th[data-column="refugo_robo_kg"] {
+    background-color: #ffeaa7; /* Laranja pastel claro */
+}
+
+/* Cores pastel laranja clarinho para Refugo Flexo e Refugo SOS */
+.tabela th[data-column="refugo_flexo_kg"],
+.tabela th[data-column="refugo_sos_kg"] {
+    background-color: #ffeaa7 !important; /* Laranja pastel clarinho */
+}
+
+/* Cores pastel para as três primeiras colunas (amarelo clarinho) */
+.tabela th[data-column="num_of"],
+.tabela th[data-column="servico"],
+.tabela th[data-column="numero_pedido"] {
+    background-color: #fff9c4; /* Amarelo pastel claro */
+}
+
+/* Cores pastel para colunas de impressora (amarelo clarinho) */
+.tabela th[data-column="inicio_acerto_impressora"],
+.tabela th[data-column="fim_acerto_impressora"],
+.tabela th[data-column="inicio_prod_impressora"],
+.tabela th[data-column="fim_prod_impressora"],
+.tabela th[data-column="tempo_acerto_impressora"],
+.tabela th[data-column="tempo_prod_impressora"] {
+    background-color: #fff9c4; /* Amarelo pastel claro */
+}
+
+/* Cores pastel para colunas de SOS (verde clarinho) */
+.tabela th[data-column="inicio_acerto"],
+.tabela th[data-column="fim_acerto"],
+.tabela th[data-column="inicio_prod"],
+.tabela th[data-column="fim_prod"],
+.tabela th[data-column="tempo_acerto_s"],
+.tabela th[data-column="tempo_prod_s"] {
+    background-color: #d4edda; /* Verde pastel claro */
+}
+.tabela td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
+.tabela tbody tr:nth-child(even) { background-color: rgba(231, 234, 236, 0.90); }
+.tabela tbody tr:nth-child(odd) { background-color: #ffffff; }
+.actions-cell { display: flex; gap: 5px; align-items: center; position: sticky; right: 0; z-index: 2; }
+.tabela tr td.actions-cell { background: white; } 
+.tabela tr:nth-child(even) td.actions-cell { background: rgba(231, 234, 236, 0.90); }
+
+/* Colunas fixadas à esquerda */
+.tabela th.sticky-left,
+.tabela td.sticky-left {
+    position: sticky;
+    z-index: 1;
+}
+
+/* Cabeçalhos fixados à esquerda precisam ter z-index maior para ficar acima dos outros cabeçalhos */
+.tabela th.sticky-left {
+    z-index: 3;
+}
+
+/* Mantém a cor de fundo específica para cabeçalhos fixados que têm cor definida */
+.tabela th.sticky-left[data-column="num_of"],
+.tabela th.sticky-left[data-column="servico"] {
+    background-color: #fff9c4 !important; /* Amarelo pastel claro */
+}
+
+.tabela tbody tr:nth-child(even) td.sticky-left {
+    background-color: rgba(231, 234, 236, 0.90);
+}
+
+.tabela tbody tr:nth-child(odd) td.sticky-left {
+    background-color: #ffffff;
+}
+
+/* Posições left serão calculadas via JavaScript */
+
+/* Cabeçalho coluna Ações: fixo no scroll vertical e horizontal */
+.tabela th.th-actions {
+    position: sticky !important;
+    top: 0 !important;
+    right: 0 !important;
+    z-index: 5 !important;
+    background-color: #f8f9fa !important;
+    box-shadow: -2px 0 4px rgba(0,0,0,0.06);
+}
+/* Ajuste para garantir que a coluna de ações tenha z-index maior que as fixadas à esquerda */
+.tabela th:last-child {
+    z-index: 4; /* Maior que os cabeçalhos fixados à esquerda */
+}
+.tabela td.actions-cell {
+    z-index: 2; /* Mantém acima das células normais */
+}
+.btn-acao { padding: 4px; font-size: 12px; border-radius: 4px; text-decoration: none; line-height: 1; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; }
+.btn-acao svg { width: 16px; height: 16px; }
+.btn-editar { background-color: #ffc107; } .btn-editar svg { stroke: #333; }
+.btn-excluir { background-color: #dc3545; } .btn-excluir svg { stroke: white; }
+.btn-duplicar { background-color: #0d6efd; } .btn-duplicar svg { stroke: white; }
+.alert { padding: 15px; margin-bottom: 20px; border-radius: 4px; }
+.alert-success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; } 

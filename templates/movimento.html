@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRODUÇÃO - Movimento</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/historico.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <style>
+        .pedidos-table-card { padding-left: 0 !important; }
+        .pedidos-table-card .tabela { margin-top: 0; padding-top: 0; }
+        .tabela th[data-column="emissao"],
+        .tabela th[data-column="entrega"] { background-color: #d4edda; }
+        .tabela th[data-column="pedido"],
+        .tabela th[data-column="qtde_total"] { background-color: #d1ecf1; }
+        .tabela th[data-column="valor_item"],
+        .tabela th[data-column="custo"],
+        .tabela th[data-column="margem"] { background-color: #ffeaa7; }
+        .filter-controls-right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    </style>
+</head>
+<body>
+  <div id="filter-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Filtros Avançados</h2>
+        <button class="modal-close" onclick="document.getElementById('filter-modal').style.display='none'">&times;</button>
+      </div>
+      <form id="filter-form" method="get" action="{{ action_url }}" hx-get="{{ action_url }}" hx-target="#movimento-resultado" hx-push-url="true" hx-on::after-request="document.getElementById('filter-modal').style.display='none'">
+        <div class="modal-body">
+          <div class="filter-group">
+            <label>Pedido:</label>
+            <input type="text" name="pedido" value="{{ request.args.get('pedido', '') }}" placeholder="Número do pedido">
+          </div>
+          <div class="filter-group">
+            <label>Fantasia:</label>
+            <input type="text" name="fantasia" value="{{ request.args.get('fantasia', '') }}" placeholder="Nome fantasia">
+          </div>
+          <div class="filter-group">
+            <label>Cidade:</label>
+            <input type="text" name="cidade" value="{{ request.args.get('cidade', '') }}" placeholder="Cidade">
+          </div>
+          <div class="filter-group">
+            <label>UF:</label>
+            <input type="text" name="uf" value="{{ request.args.get('uf', '') }}" placeholder="UF">
+          </div>
+          <div class="filter-group">
+            <label>Grupo:</label>
+            <input type="text" name="grupo" value="{{ request.args.get('grupo', '') }}" placeholder="Grupo">
+          </div>
+          <div class="filter-group">
+            <label>Representante:</label>
+            <input type="text" name="representante" value="{{ request.args.get('representante', '') }}" placeholder="Representante">
+          </div>
+          <div class="filter-group">
+            <label><strong>Emissão</strong></label>
+            <label style="font-weight: normal; margin-top: 5px; font-size: 12px;">De:</label>
+            <input type="date" name="start_emissao" value="{{ request.args.get('start_emissao', '') }}" style="margin-bottom: 10px;">
+            <label style="font-weight: normal; font-size: 12px;">Até:</label>
+            <input type="date" name="end_emissao" value="{{ request.args.get('end_emissao', '') }}">
+          </div>
+          <div class="filter-group">
+            <label><strong>Entrega</strong></label>
+            <label style="font-weight: normal; margin-top: 5px; font-size: 12px;">De:</label>
+            <input type="date" name="start_entrega" value="{{ request.args.get('start_entrega', '') }}" style="margin-bottom: 10px;">
+            <label style="font-weight: normal; font-size: 12px;">Até:</label>
+            <input type="date" name="end_entrega" value="{{ request.args.get('end_entrega', '') }}">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('filter-modal').style.display='none'">Fechar</button>
+          <button type="submit" class="btn">Filtrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="container">
+    {% include 'partials/header_nav.html' %}
+    {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}
+    <script>
+      (function() {
+          const alerts = document.querySelectorAll('.alert');
+          alerts.forEach(function(alert) {
+              setTimeout(function() {
+                  alert.style.transition = 'opacity 0.5s ease-out';
+                  alert.style.opacity = '0';
+                  setTimeout(function() { alert.remove(); }, 500);
+              }, 5000);
+          });
+      })();
+    </script>
+    <div class="card">
+        <div class="filter-controls">
+            <div class="filter-controls-left">
+                <button class="btn btn-secondary" onclick="document.getElementById('filter-modal').style.display='flex'">Filtros Avançados</button>
+                <a href="{{ url_for('main.movimento') }}" hx-get="{{ url_for('main.movimento') }}" hx-target="#movimento-resultado" hx-push-url="true" class="btn btn-icon btn-warning" title="Limpar Filtros"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/></svg></a>
+            </div>
+            <h2 class="card-title-center">Movimento</h2>
+            <div class="filter-controls-right">
+                <form action="{{ url_for('main.atualizar_movimento') }}" method="post" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn">Atualizar Banco de Dados</button>
+                </form>
+                <a href="{{ url_for('main.movimento', export='excel', **preserved_args) }}" class="btn btn-success">Exportar Excel</a>
+            </div>
+        </div>
+    </div>
+    <div id="movimento-resultado">
+        {% include 'partials/movimento_resultado.html' %}
+    </div>
+  </div>
+  <script src="{{ url_for('static', filename='js/vendor/htmx.min.js') }}"></script>
+</body>
+</html>
