@@ -6,6 +6,9 @@
   <title>PRODUÇÃO - Display Diário</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/analise.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     .filtro-form { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
     .filtro-form label { font-weight: 600; }
@@ -29,51 +32,344 @@
     .metas-campo label { font-weight: 600; }
     .metas-campo input { padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; }
     .metas-ajuda { color: #666; margin: 10px 0; }
-    .painel-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-    .painel-setor { border: 1px solid #e3e6ea; border-radius: 10px; padding: 20px; background: #fff; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-    .painel-titulo { font-size: 26px; font-weight: 700; color: #1a2b3c; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
-    .gauge { width: 100%; max-width: 420px; display: block; margin: 0 auto; }
-    .gauge-fundo, .gauge-valor { fill: none; stroke-width: 34; }
-    .gauge-fundo { stroke: #eeeceb; }
-    .gauge-valor { stroke: #2e7df6; transition: stroke-dasharray 0.8s ease; }
-    .painel-setor.atingida .gauge-valor { stroke: #28a745; }
-    .gauge-pct { font-size: 30px; fill: #444; font-weight: 300; }
-    .painel-setor.atingida .gauge-pct { fill: #1e7e34; font-weight: 600; }
-    .gauge-sem-meta { font-size: 24px; fill: #999; }
-    .gauge-limite { font-size: 12px; fill: #666; }
-    .painel-numeros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
-    .painel-numero { background: #f5f7fa; border-radius: 8px; padding: 10px 6px; }
-    .painel-numero span { display: block; font-size: 13px; color: #666; text-transform: uppercase; margin-bottom: 4px; }
-    .painel-numero strong { font-size: 22px; color: #1a2b3c; }
-    .painel-falta { background: #fff4e5; }
-    .painel-falta strong { color: #c05600; }
-    .painel-setor.atingida .painel-falta { background: #e6f4ea; }
-    .painel-setor.atingida .painel-falta strong { color: #1e7e34; font-size: 17px; }
     .painel-controles { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
     .painel-controles-rotulo { font-weight: 600; }
     .painel-check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 600; user-select: none; }
     .painel-check input { width: 16px; height: 16px; cursor: pointer; }
+    #painel-filtros-wrap { display: inline-flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .painel-controles.modo-slide #painel-filtros-wrap,
+    .painel-controles.modo-slide #rotulo-mostrar { opacity: 0.45; pointer-events: none; }
+    .painel-controles.modo-slide .painel-filtro { cursor: not-allowed; }
     .painel-vazio { display: none; padding: 30px; text-align: center; color: #888; font-size: 15px; border: 1px dashed #ccc; border-radius: 8px; }
-    .painel-rodape { margin-top: 15px; color: #888; font-size: 12px; text-align: right; }
-
-    /* Modo TV (tela cheia): tudo escala com a largura da tela */
-    .painel-tv:fullscreen { background: #f5f5f5; padding: 2.5vw; margin: 0; border-radius: 0; display: flex; flex-direction: column; justify-content: center; overflow: auto; }
-    .painel-tv:fullscreen .painel-controles { display: none; }
-    .painel-tv:fullscreen .section-header h3 { font-size: 2.4vw; }
-    .painel-tv:fullscreen .painel-grid { gap: 2vw; }
-    .painel-tv:fullscreen .painel-setor { padding: 2vw 1.5vw; }
-    .painel-tv:fullscreen .painel-titulo { font-size: 3vw; }
-    .painel-tv:fullscreen .gauge { max-width: none; max-height: 52vh; }
-    .painel-tv:fullscreen .painel-numero span { font-size: 1.1vw; }
-    .painel-tv:fullscreen .painel-numero strong { font-size: 2vw; }
-    .painel-tv:fullscreen .painel-setor.atingida .painel-falta strong { font-size: 1.6vw; }
-    .painel-tv:fullscreen .painel-rodape { font-size: 0.9vw; }
-    .painel-tv:fullscreen .painel-grid.um-setor { width: 60%; margin: 0 auto; }
-    @media (max-width: 900px) { .painel-grid { grid-template-columns: 1fr !important; } }
-
     .alert { padding: 10px 14px; border-radius: 4px; margin-bottom: 15px; font-weight: 600; }
     .alert-success { background: #d4edda; color: #155724; }
     .alert-danger { background: #f8d7da; color: #721c24; }
+
+    /* ===== Painel TV ===== */
+    .painel-tv {
+      --tv-bg: #f4f8fc;
+      --tv-ink: #0f2440;
+      --tv-muted: #6b7c90;
+      --tv-falta: #f05a22;
+      --tv-meta: #8a94a3;
+      font-family: 'Outfit', sans-serif;
+      background:
+        radial-gradient(ellipse 50% 40% at 100% 0%, rgba(46, 125, 246, 0.12), transparent 60%),
+        radial-gradient(ellipse 40% 35% at 0% 100%, rgba(240, 90, 34, 0.08), transparent 55%),
+        linear-gradient(135deg, #eef5fc 0%, #f7fafc 45%, #eef6f2 100%);
+      border: none;
+      border-radius: 16px;
+      padding: 22px 24px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .painel-tv::before {
+      content: '';
+      position: absolute;
+      right: -40px; top: -40px;
+      width: 220px; height: 220px;
+      background:
+        radial-gradient(circle at center, transparent 38%, rgba(15, 36, 64, 0.05) 39%, rgba(15, 36, 64, 0.05) 48%, transparent 49%),
+        radial-gradient(circle at center, transparent 58%, rgba(15, 36, 64, 0.04) 59%, rgba(15, 36, 64, 0.04) 68%, transparent 69%);
+      pointer-events: none;
+    }
+    .painel-tv .section-header h3 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 28px;
+      color: var(--tv-ink);
+      letter-spacing: -0.02em;
+      position: relative;
+    }
+    .painel-tv .section-header h3::after {
+      content: '';
+      display: block;
+      width: 72px;
+      height: 5px;
+      border-radius: 3px;
+      margin-top: 6px;
+      background: linear-gradient(90deg, #2e7df6, #22c55e);
+    }
+    .painel-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      position: relative;
+      z-index: 1;
+    }
+    .painel-setor {
+      --cor: #2e7df6;
+      --cor-escura: #1a5fd0;
+      --cor-clara: #6aa8ff;
+      background: #fff;
+      border-radius: 18px;
+      padding: 0 0 14px;
+      box-shadow: 0 10px 28px rgba(15, 36, 64, 0.08);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    /* Precisa de !important: o display:flex acima sobrescreve o [hidden] do HTML. */
+    .painel-setor[hidden] { display: none !important; }
+    .painel-setor[data-grupo="SOS"] { --cor: #2e7df6; --cor-escura: #1a5fd0; --cor-clara: #6aa8ff; }
+    .painel-setor[data-grupo="IMPRESSORA"] { --cor: #f05a22; --cor-escura: #c94312; --cor-clara: #ff8a4c; }
+    .painel-setor[data-grupo="ROBO"] { --cor: #22c55e; --cor-escura: #16a34a; --cor-clara: #4ade80; }
+
+    .painel-banner {
+      background: linear-gradient(90deg, var(--cor-escura), var(--cor-clara));
+      color: #fff;
+      text-align: center;
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      font-size: 28px;
+      letter-spacing: 0.06em;
+      padding: 12px 10px 14px;
+      text-transform: uppercase;
+      clip-path: polygon(0 0, 100% 0, 100% 78%, 50% 100%, 0 78%);
+      margin-bottom: 6px;
+    }
+    .painel-badge { display: none; }
+    .painel-titulo-hero { display: none; }
+    .painel-hero { display: none; }
+
+    .painel-gauge-wrap { padding: 8px 16px 0; }
+    .gauge { width: 100%; max-width: 280px; display: block; margin: 0 auto; }
+    .gauge-fundo, .gauge-valor { fill: none; stroke-width: 18; stroke-linecap: round; }
+    .gauge-fundo { stroke: #e8eef5; }
+    .gauge-valor { stroke: var(--cor); transition: stroke-dasharray 0.8s ease; }
+    /* font-size do texto do gauge fica no SVG (unidades do viewBox),
+       para escalar junto com o arco e não sobrepor em tela cheia. */
+    .gauge-pct {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      fill: var(--tv-ink);
+    }
+    .gauge-sem-meta { fill: var(--tv-muted); font-weight: 600; }
+    .gauge-limite { fill: var(--tv-muted); font-weight: 600; }
+
+    .painel-metricas { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px 0; }
+    .painel-metrica {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      background: #f7f9fc;
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .painel-metrica-ico {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: grid; place-items: center; flex-shrink: 0;
+    }
+    .painel-metrica-ico svg { width: 18px; height: 18px; }
+    .painel-metrica-ico.realizado { background: var(--cor); color: #fff; }
+    .painel-metrica-ico.meta { background: #9aa3b2; color: #fff; }
+    .painel-metrica-ico.falta { background: var(--tv-falta); color: #fff; }
+    .painel-metrica-rotulo {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+      color: var(--tv-muted); text-transform: uppercase;
+      border-left: 1px solid #dbe3ee; padding-left: 10px;
+    }
+    .painel-metrica-valor {
+      font-size: 20px; font-weight: 800; color: var(--tv-ink);
+      font-variant-numeric: tabular-nums; white-space: nowrap;
+    }
+    .painel-metrica.falta .painel-metrica-valor { color: var(--tv-falta); }
+    .painel-setor.atingida .painel-metrica.falta .painel-metrica-valor { color: #16a34a; font-size: 15px; }
+
+    .painel-kpis { display: none; }
+    .painel-rodape {
+      margin-top: 14px; color: var(--tv-muted); font-size: 12px;
+      text-align: right; position: relative; z-index: 1; font-weight: 500;
+    }
+
+    /* Uma máquina: layout hero (como o mockup de tela única) */
+    .painel-grid.um-setor {
+      grid-template-columns: 1fr;
+      max-width: 980px;
+      margin: 0 auto;
+    }
+    .painel-grid.um-setor .painel-setor {
+      padding: 20px 28px 24px;
+      background: transparent;
+      box-shadow: none;
+      overflow: visible;
+    }
+    .painel-grid.um-setor .painel-banner { display: none; }
+    .painel-grid.um-setor .painel-hero {
+      display: grid;
+      /* Medidor sempre com espaço reservado; o nome encolhe se for longo. */
+      grid-template-columns: minmax(0, 1.05fr) minmax(260px, 1fr);
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 18px;
+    }
+    .painel-grid.um-setor .painel-hero > :first-child { min-width: 0; }
+    .painel-grid.um-setor .painel-hero > :last-child { min-width: 0; justify-self: stretch; }
+    .painel-grid.um-setor .painel-badge {
+      display: inline-block;
+      background: var(--cor);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      padding: 6px 18px 6px 14px;
+      clip-path: polygon(0 0, 100% 0, 92% 100%, 0 100%);
+      margin-bottom: 8px;
+    }
+    .painel-grid.um-setor .painel-titulo-hero {
+      display: block;
+      font-family: 'Oswald', sans-serif;
+      font-size: clamp(64px, 9vw, 110px);
+      font-weight: 700;
+      line-height: 1.12;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      padding: 0.08em 0 0.12em;
+      overflow: visible;
+      background: linear-gradient(180deg, var(--cor-clara), var(--cor-escura));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      filter: drop-shadow(0 2px 0 rgba(15, 36, 64, 0.08));
+    }
+    /* Nome longo: reduz só a Impressora para o medidor ficar do mesmo tamanho. */
+    .painel-grid.um-setor .painel-setor[data-grupo="IMPRESSORA"] .painel-titulo-hero {
+      font-size: clamp(42px, 5.2vw, 72px);
+      letter-spacing: 0.01em;
+    }
+    .painel-grid.um-setor .painel-gauge-card { display: none; }
+    .painel-grid.um-setor .painel-gauge-wrap { padding: 0; }
+    .painel-grid.um-setor .gauge { max-width: 100%; }
+    .painel-grid.um-setor .gauge-fundo, .painel-grid.um-setor .gauge-valor { stroke-width: 22; }
+    .painel-grid.um-setor .painel-metricas { display: none; }
+    .painel-grid.um-setor .painel-kpis {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .painel-kpi {
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px 18px 14px;
+      box-shadow: 0 8px 24px rgba(15, 36, 64, 0.07);
+      position: relative;
+      overflow: hidden;
+    }
+    .painel-kpi-topo { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .painel-kpi-ico {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: grid; place-items: center; color: #fff;
+    }
+    .painel-kpi-ico svg { width: 20px; height: 20px; }
+    .painel-kpi.realizado .painel-kpi-ico { background: var(--cor); }
+    .painel-kpi.meta .painel-kpi-ico { background: var(--tv-meta); }
+    .painel-kpi.falta .painel-kpi-ico { background: var(--tv-falta); }
+    .painel-kpi-rotulo {
+      font-size: 12px; font-weight: 700; letter-spacing: 0.1em;
+      color: var(--tv-muted); text-transform: uppercase;
+    }
+    .painel-kpi-valor {
+      font-size: clamp(28px, 3.2vw, 40px); font-weight: 800;
+      color: var(--tv-ink); font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+    .painel-kpi.falta .painel-kpi-valor { color: var(--tv-falta); }
+    .painel-setor.atingida .painel-kpi.falta .painel-kpi-valor { color: #16a34a; font-size: clamp(18px, 2vw, 26px); }
+    .painel-kpi-barra {
+      height: 5px; border-radius: 3px; background: #e8eef5;
+      margin-top: 12px; overflow: hidden;
+    }
+    .painel-kpi-barra > span {
+      display: block; height: 100%; border-radius: 3px;
+      background: var(--cor); width: 0%;
+    }
+    .painel-kpi.meta .painel-kpi-barra > span { background: var(--tv-meta); width: 100%; }
+    .painel-kpi.falta .painel-kpi-barra > span { background: var(--tv-falta); }
+
+    /* Modo tela cheia */
+    .painel-tv:fullscreen {
+      padding: 2.2vw 3vw 1.5vw;
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+    }
+    /* Com 2 cards: um pouco mais de ar em cima/baixo, sem empurrar o conteúdo. */
+    .painel-tv.dois-setores:fullscreen {
+      padding: 3.2vw 4vw 2.2vw;
+      justify-content: space-between;
+    }
+    .painel-tv.dois-setores:fullscreen .section-header {
+      margin-bottom: 1.2vw;
+      flex-shrink: 0;
+    }
+    .painel-tv.dois-setores:fullscreen .painel-grid {
+      flex: 1 1 auto;
+      min-height: 0;
+      align-content: center;
+    }
+    .painel-tv.dois-setores:fullscreen .painel-setor {
+      max-height: 100%;
+    }
+    .painel-tv.dois-setores:fullscreen .painel-gauge-card .gauge {
+      max-height: 38vh;
+    }
+    .painel-tv.dois-setores:fullscreen .painel-rodape {
+      flex-shrink: 0;
+      margin-top: 0.8vw;
+    }
+    .painel-tv.dois-setores .section-header {
+      margin-bottom: 18px;
+    }
+    .painel-tv:fullscreen .painel-controles { display: none; }
+    .painel-tv:fullscreen .section-header h3 { font-size: 2.6vw; }
+    .painel-tv:fullscreen .section-header h3::after { width: 5vw; height: 0.45vw; }
+    .painel-tv:fullscreen .painel-grid { gap: 1.6vw; width: 100%; max-width: 100%; box-sizing: border-box; }
+    .painel-tv:fullscreen .painel-banner { font-size: 2.4vw; padding: 1.1vw 0.8vw 1.4vw; }
+    .painel-tv:fullscreen .gauge { max-width: none; }
+    .painel-tv:fullscreen .painel-metrica { padding: 0.9vw 1vw; border-radius: 1vw; gap: 0.7vw; }
+    .painel-tv:fullscreen .painel-metrica-ico { width: 2.6vw; height: 2.6vw; }
+    .painel-tv:fullscreen .painel-metrica-ico svg { width: 1.4vw; height: 1.4vw; }
+    .painel-tv:fullscreen .painel-metrica-rotulo { font-size: 1vw; padding-left: 0.8vw; }
+    .painel-tv:fullscreen .painel-metrica-valor { font-size: 1.8vw; }
+    .painel-tv:fullscreen .painel-setor.atingida .painel-metrica.falta .painel-metrica-valor { font-size: 1.3vw; }
+    .painel-tv:fullscreen .painel-grid.um-setor {
+      max-width: 100%;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .painel-tv:fullscreen .painel-grid.um-setor .painel-hero {
+      grid-template-columns: minmax(0, 1.05fr) minmax(28vw, 1fr);
+      gap: 2vw;
+    }
+    .painel-tv:fullscreen .painel-grid.um-setor .painel-setor { padding: 1vw 2vw; overflow: visible; }
+    .painel-tv:fullscreen .painel-grid.um-setor .painel-badge { font-size: 1.2vw; padding: 0.5vw 1.6vw 0.5vw 1.2vw; }
+    .painel-tv:fullscreen .painel-grid.um-setor .painel-titulo-hero { font-size: 9vw; }
+    .painel-tv:fullscreen .painel-grid.um-setor .painel-setor[data-grupo="IMPRESSORA"] .painel-titulo-hero {
+      font-size: 5.5vw;
+    }
+    .painel-tv:fullscreen .painel-grid.um-setor .gauge-fundo,
+    .painel-tv:fullscreen .painel-grid.um-setor .gauge-valor { stroke-width: 14; }
+    .painel-tv:fullscreen .painel-kpi { padding: 1.4vw 1.6vw; border-radius: 1.2vw; }
+    .painel-tv:fullscreen .painel-kpi-ico { width: 3.2vw; height: 3.2vw; }
+    .painel-tv:fullscreen .painel-kpi-ico svg { width: 1.6vw; height: 1.6vw; }
+    .painel-tv:fullscreen .painel-kpi-rotulo { font-size: 1.1vw; }
+    .painel-tv:fullscreen .painel-kpi-valor { font-size: 3.4vw; }
+    .painel-tv:fullscreen .painel-setor.atingida .painel-kpi.falta .painel-kpi-valor { font-size: 2.2vw; }
+    .painel-tv:fullscreen .painel-kpi-barra { height: 0.4vw; margin-top: 1vw; }
+    .painel-tv:fullscreen .painel-rodape { font-size: 1vw; margin-top: 1.4vw; }
+
+    @media (max-width: 900px) {
+      .painel-grid { grid-template-columns: 1fr !important; }
+      .painel-grid.um-setor .painel-hero { grid-template-columns: 1fr; text-align: left; }
+      .painel-grid.um-setor .painel-kpis { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -174,44 +470,117 @@
         <div class="section-header">
           <h3>Painel de Metas – {{ mes_selecionado_fmt }}</h3>
           <div class="painel-controles">
-            <span class="painel-controles-rotulo">Mostrar:</span>
+            <label class="painel-check" for="modo-exibicao" style="gap:8px;">
+              <span class="painel-controles-rotulo">Modo de Exibição</span>
+              <select id="modo-exibicao" class="form-select" style="padding:6px 10px; border:1px solid #ccc; border-radius:4px; font-weight:600;" onchange="alterarModoExibicao()">
+                <option value="estatico">Estático</option>
+                <option value="slide">Slide</option>
+              </select>
+            </label>
+            <span class="painel-controles-rotulo" id="rotulo-mostrar">Mostrar:</span>
+            <span id="painel-filtros-wrap">
             {% for r in meta_mes %}
             <label class="painel-check">
               <input type="checkbox" class="painel-filtro" value="{{ r.grupo }}" checked onchange="aplicarFiltroPainel(true)">
               {{ r.setor }}
             </label>
             {% endfor %}
+            </span>
             <button type="button" class="btn" id="btn-tela-cheia" onclick="abrirTelaCheia()">Tela cheia (TV)</button>
           </div>
         </div>
         <div class="painel-vazio" id="painel-vazio">Selecione ao menos um setor para exibir no painel.</div>
         <div class="painel-grid" id="painel-conteudo">
           {% for r in meta_mes %}
+          {% set pct_barra = r.pct_grafico if r.meta else 0 %}
+          {% set falta_barra = (100 - pct_barra) if r.meta and not r.atingida else (100 if r.atingida else 0) %}
           <div class="painel-setor {{ 'atingida' if r.atingida else '' }}" data-grupo="{{ r.grupo }}">
-            <div class="painel-titulo">{{ r.setor }}</div>
-            <svg class="gauge" viewBox="0 0 240 145" role="img" aria-label="{{ r.setor }}: {{ r.status_fmt }} da meta">
-              <path class="gauge-fundo" d="M 25 120 A 95 95 0 0 1 215 120" pathLength="100"></path>
-              {% if r.meta %}
-              <path class="gauge-valor" d="M 25 120 A 95 95 0 0 1 215 120" pathLength="100" stroke-dasharray="{{ '%.2f'|format(r.pct_grafico) }} 100"></path>
-              <text class="gauge-pct" x="120" y="116" text-anchor="middle">{{ r.status_fmt }}</text>
-              {% else %}
-              <text class="gauge-sem-meta" x="120" y="108" text-anchor="middle">Sem meta</text>
-              {% endif %}
-              <text class="gauge-limite" x="25" y="142" text-anchor="middle">0%</text>
-              <text class="gauge-limite" x="215" y="142" text-anchor="middle">100%</text>
-            </svg>
-            <div class="painel-numeros">
-              <div class="painel-numero">
-                <span>Realizado</span>
-                <strong>{{ r.produzido_fmt }}</strong>
+            <div class="painel-banner">{{ r.setor }}</div>
+            <div class="painel-hero">
+              <div>
+                <span class="painel-badge">MÁQUINA</span>
+                <div class="painel-titulo-hero">{{ r.setor }}</div>
               </div>
-              <div class="painel-numero">
-                <span>Meta</span>
-                <strong>{{ r.meta_fmt }}</strong>
+              <div class="painel-gauge-wrap">
+                <svg class="gauge" viewBox="0 0 240 150" role="img" aria-label="{{ r.setor }}: {{ r.status_fmt }} da meta">
+                  <path class="gauge-fundo" d="M 30 122 A 90 90 0 0 1 210 122" pathLength="100"></path>
+                  {% if r.meta %}
+                  <path class="gauge-valor" d="M 30 122 A 90 90 0 0 1 210 122" pathLength="100" stroke-dasharray="{{ '%.2f'|format(r.pct_grafico) }} 100"></path>
+                  <text class="gauge-pct" x="120" y="100" text-anchor="middle" font-size="32">{{ r.status_fmt }}</text>
+                  {% else %}
+                  <text class="gauge-sem-meta" x="120" y="100" text-anchor="middle" font-size="20">Sem meta</text>
+                  {% endif %}
+                  <text class="gauge-limite" x="28" y="142" text-anchor="middle" font-size="12">0%</text>
+                  <text class="gauge-limite" x="212" y="142" text-anchor="middle" font-size="12">100%</text>
+                </svg>
               </div>
-              <div class="painel-numero painel-falta">
-                <span>{{ 'Status' if r.atingida else 'Falta' }}</span>
-                <strong>{{ 'Meta atingida!' if r.atingida else r.falta_fmt }}</strong>
+            </div>
+            <div class="painel-gauge-wrap painel-gauge-card">
+              <svg class="gauge" viewBox="0 0 240 150" role="img" aria-label="{{ r.setor }}: {{ r.status_fmt }} da meta">
+                <path class="gauge-fundo" d="M 30 122 A 90 90 0 0 1 210 122" pathLength="100"></path>
+                {% if r.meta %}
+                <path class="gauge-valor" d="M 30 122 A 90 90 0 0 1 210 122" pathLength="100" stroke-dasharray="{{ '%.2f'|format(r.pct_grafico) }} 100"></path>
+                <text class="gauge-pct" x="120" y="100" text-anchor="middle" font-size="32">{{ r.status_fmt }}</text>
+                {% else %}
+                <text class="gauge-sem-meta" x="120" y="100" text-anchor="middle" font-size="20">Sem meta</text>
+                {% endif %}
+                <text class="gauge-limite" x="28" y="142" text-anchor="middle" font-size="12">0%</text>
+                <text class="gauge-limite" x="212" y="142" text-anchor="middle" font-size="12">100%</text>
+              </svg>
+            </div>
+            <div class="painel-metricas">
+              <div class="painel-metrica">
+                <span class="painel-metrica-ico realizado" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M22 19V3"/></svg>
+                </span>
+                <span class="painel-metrica-rotulo">Realizado</span>
+                <strong class="painel-metrica-valor">{{ r.produzido_fmt }}</strong>
+              </div>
+              <div class="painel-metrica">
+                <span class="painel-metrica-ico meta" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+                </span>
+                <span class="painel-metrica-rotulo">Meta</span>
+                <strong class="painel-metrica-valor">{{ r.meta_fmt }}</strong>
+              </div>
+              <div class="painel-metrica falta">
+                <span class="painel-metrica-ico falta" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                </span>
+                <span class="painel-metrica-rotulo">{{ 'Status' if r.atingida else 'Falta' }}</span>
+                <strong class="painel-metrica-valor">{{ 'Meta atingida!' if r.atingida else r.falta_fmt }}</strong>
+              </div>
+            </div>
+            <div class="painel-kpis">
+              <div class="painel-kpi realizado">
+                <div class="painel-kpi-topo">
+                  <span class="painel-kpi-ico" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M22 19V3"/></svg>
+                  </span>
+                  <span class="painel-kpi-rotulo">Realizado</span>
+                </div>
+                <div class="painel-kpi-valor">{{ r.produzido_fmt }}</div>
+                <div class="painel-kpi-barra"><span style="width: {{ '%.1f'|format(pct_barra) }}%;"></span></div>
+              </div>
+              <div class="painel-kpi meta">
+                <div class="painel-kpi-topo">
+                  <span class="painel-kpi-ico" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+                  </span>
+                  <span class="painel-kpi-rotulo">Meta</span>
+                </div>
+                <div class="painel-kpi-valor">{{ r.meta_fmt }}</div>
+                <div class="painel-kpi-barra"><span></span></div>
+              </div>
+              <div class="painel-kpi falta">
+                <div class="painel-kpi-topo">
+                  <span class="painel-kpi-ico" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                  </span>
+                  <span class="painel-kpi-rotulo">{{ 'Status' if r.atingida else 'Falta' }}</span>
+                </div>
+                <div class="painel-kpi-valor">{{ 'Meta atingida!' if r.atingida else r.falta_fmt }}</div>
+                <div class="painel-kpi-barra"><span style="width: {{ '%.1f'|format(falta_barra) }}%;"></span></div>
               </div>
             </div>
           </div>
@@ -223,41 +592,162 @@
   </div>
   <script>
     const INTERVALO_ATUALIZACAO_MS = 5 * 60 * 1000;
+    const INTERVALO_SLIDE_MS = 10 * 1000;
+    const CHAVE_FILTRO_PAINEL = 'displayDiario.setoresPainel';
+    const CHAVE_MODO_EXIBICAO = 'displayDiario.modoExibicao';
+    const TODOS_SETORES = ['SOS', 'IMPRESSORA', 'ROBO'];
+    const SLIDE_PASSOS = [
+      ['SOS'],
+      ['IMPRESSORA'],
+      ['ROBO'],
+      ['SOS', 'IMPRESSORA', 'ROBO'],
+    ];
+
+    let modoExibicao = 'estatico';
+    let slideIndice = 0;
+    let slideTimer = null;
 
     function marcarHora() {
       document.getElementById('painel-hora').textContent =
         new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     }
 
-    const CHAVE_FILTRO_PAINEL = 'displayDiario.setoresPainel';
+    function emTelaCheia() {
+      return document.fullscreenElement === document.getElementById('painel-tv');
+    }
 
-    function aplicarFiltroPainel(salvar) {
-      const filtros = Array.from(document.querySelectorAll('.painel-filtro'));
-      const selecionados = filtros.filter(function(f) { return f.checked; }).map(function(f) { return f.value; });
-      if (salvar) localStorage.setItem(CHAVE_FILTRO_PAINEL, JSON.stringify(selecionados));
-
+    function mostrarSetores(selecionados) {
       document.querySelectorAll('#painel-conteudo .painel-setor').forEach(function(card) {
         card.hidden = !selecionados.includes(card.dataset.grupo);
       });
       const grade = document.getElementById('painel-conteudo');
-      grade.style.gridTemplateColumns = 'repeat(' + Math.max(selecionados.length, 1) + ', 1fr)';
-      grade.classList.toggle('um-setor', selecionados.length === 1);
-      document.getElementById('painel-vazio').style.display = selecionados.length ? 'none' : 'block';
+      const painel = document.getElementById('painel-tv');
+      const qtd = selecionados.length;
+      grade.classList.toggle('um-setor', qtd === 1);
+      grade.classList.toggle('dois-setores', qtd === 2);
+      if (painel) {
+        painel.classList.toggle('um-setor', qtd === 1);
+        painel.classList.toggle('dois-setores', qtd === 2);
+      }
+      if (qtd <= 1) {
+        grade.style.gridTemplateColumns = '1fr';
+      } else {
+        grade.style.gridTemplateColumns = 'repeat(' + qtd + ', 1fr)';
+      }
+      document.getElementById('painel-vazio').style.display = qtd ? 'none' : 'block';
+    }
+
+    function setoresDosCheckboxes() {
+      return Array.from(document.querySelectorAll('.painel-filtro'))
+        .filter(function(f) { return f.checked; })
+        .map(function(f) { return f.value; });
+    }
+
+    function aplicarFiltroPainel(salvar) {
+      if (modoExibicao === 'slide') {
+        // Fora da tela cheia mostra os 3; em tela cheia o slide controla.
+        if (emTelaCheia()) {
+          mostrarSetores(SLIDE_PASSOS[slideIndice]);
+        } else {
+          mostrarSetores(TODOS_SETORES);
+        }
+        return;
+      }
+      const selecionados = setoresDosCheckboxes();
+      if (salvar) localStorage.setItem(CHAVE_FILTRO_PAINEL, JSON.stringify(selecionados));
+      mostrarSetores(selecionados);
+    }
+
+    function setCheckboxesHabilitados(habilitado) {
+      document.querySelectorAll('.painel-filtro').forEach(function(f) { f.disabled = !habilitado; });
+      const controles = document.querySelector('.painel-controles');
+      if (controles) controles.classList.toggle('modo-slide', !habilitado);
+    }
+
+    function pararSlide() {
+      if (slideTimer) {
+        clearInterval(slideTimer);
+        slideTimer = null;
+      }
+    }
+
+    function aplicarPassoSlide() {
+      mostrarSetores(SLIDE_PASSOS[slideIndice]);
+    }
+
+    function avancarSlide() {
+      slideIndice = (slideIndice + 1) % SLIDE_PASSOS.length;
+      aplicarPassoSlide();
+    }
+
+    function iniciarSlide() {
+      pararSlide();
+      slideIndice = 0;
+      aplicarPassoSlide();
+      slideTimer = setInterval(avancarSlide, INTERVALO_SLIDE_MS);
+    }
+
+    function alterarModoExibicao() {
+      const select = document.getElementById('modo-exibicao');
+      modoExibicao = select.value === 'slide' ? 'slide' : 'estatico';
+      localStorage.setItem(CHAVE_MODO_EXIBICAO, modoExibicao);
+      setCheckboxesHabilitados(modoExibicao === 'estatico');
+
+      if (modoExibicao === 'slide') {
+        if (emTelaCheia()) {
+          iniciarSlide();
+        } else {
+          pararSlide();
+          mostrarSetores(TODOS_SETORES);
+        }
+      } else {
+        pararSlide();
+        aplicarFiltroPainel(false);
+      }
     }
 
     function restaurarFiltroPainel() {
+      const modoSalvo = localStorage.getItem(CHAVE_MODO_EXIBICAO);
+      modoExibicao = modoSalvo === 'slide' ? 'slide' : 'estatico';
+      const select = document.getElementById('modo-exibicao');
+      if (select) select.value = modoExibicao;
+
       let salvos = null;
       try { salvos = JSON.parse(localStorage.getItem(CHAVE_FILTRO_PAINEL)); } catch (e) { salvos = null; }
       if (Array.isArray(salvos)) {
         document.querySelectorAll('.painel-filtro').forEach(function(f) { f.checked = salvos.includes(f.value); });
       }
-      aplicarFiltroPainel(false);
+
+      setCheckboxesHabilitados(modoExibicao === 'estatico');
+      if (modoExibicao === 'slide') {
+        mostrarSetores(TODOS_SETORES);
+      } else {
+        aplicarFiltroPainel(false);
+      }
     }
 
     function abrirTelaCheia() {
       const painel = document.getElementById('painel-tv');
-      if (painel.requestFullscreen) painel.requestFullscreen();
+      if (!painel.requestFullscreen) return;
+      painel.requestFullscreen().then(function() {
+        if (modoExibicao === 'slide') iniciarSlide();
+      }).catch(function() {
+        if (modoExibicao === 'slide') iniciarSlide();
+      });
     }
+
+    document.addEventListener('fullscreenchange', function() {
+      if (emTelaCheia()) {
+        if (modoExibicao === 'slide') iniciarSlide();
+      } else {
+        pararSlide();
+        if (modoExibicao === 'slide') {
+          mostrarSetores(TODOS_SETORES);
+        } else {
+          aplicarFiltroPainel(false);
+        }
+      }
+    });
 
     // Recarrega só os medidores (sem recarregar a página), para não sair da tela cheia.
     function atualizarPainel() {
@@ -267,7 +757,13 @@
           const novo = new DOMParser().parseFromString(html, 'text/html').getElementById('painel-conteudo');
           if (novo) {
             document.getElementById('painel-conteudo').innerHTML = novo.innerHTML;
-            aplicarFiltroPainel(false);
+            if (modoExibicao === 'slide' && emTelaCheia()) {
+              aplicarPassoSlide();
+            } else if (modoExibicao === 'slide') {
+              mostrarSetores(TODOS_SETORES);
+            } else {
+              aplicarFiltroPainel(false);
+            }
             marcarHora();
           }
         })
