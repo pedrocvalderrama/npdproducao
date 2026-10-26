@@ -35,6 +35,7 @@ PAGINAS_PRINCIPAIS = [
     '/comparativo-mensal',
     '/analise',
     '/lancamento-diario',
+    '/historico-diario',
     '/display-diario',
     '/custo',
     '/configurar_custos',

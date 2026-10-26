@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRODUÇÃO - Pedidos</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/historico.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+{% extends "base.html" %}
+
+{% block title %}PRODUÇÃO - Pedidos{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/historico.css') }}">
     <style>
         .pedidos-table-card { padding-left: 0 !important; }
         .pedidos-table-card .tabela { margin-top: 0; padding-top: 0; }
@@ -17,9 +15,10 @@
         .tabela th[data-column="valor_item"] { background-color: #ffeaa7; }
         .filter-controls-right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
     </style>
-</head>
-<body>
-  <div id="filter-modal" class="modal-overlay">
+{% endblock %}
+
+{% block content %}
+<div id="filter-modal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-header">
         <h2>Filtros Avançados</h2>
@@ -73,21 +72,7 @@
       </form>
     </div>
   </div>
-  <div class="container">
-    {% include 'partials/header_nav.html' %}
-    {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}
-    <script>
-      (function() {
-          const alerts = document.querySelectorAll('.alert');
-          alerts.forEach(function(alert) {
-              setTimeout(function() {
-                  alert.style.transition = 'opacity 0.5s ease-out';
-                  alert.style.opacity = '0';
-                  setTimeout(function() { alert.remove(); }, 500);
-              }, 5000);
-          });
-      })();
-    </script>
+
     <div class="card">
         <div class="filter-controls">
             <div class="filter-controls-left">
@@ -107,7 +92,4 @@
     <div id="pedidos-resultado">
         {% include 'partials/pedidos_resultado.html' %}
     </div>
-  </div>
-  <script src="{{ url_for('static', filename='js/vendor/htmx.min.js') }}"></script>
-</body>
-</html>
+{% endblock %}

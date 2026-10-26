@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PRODUÇÃO - Comparativo Mensal</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/analise.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+{% extends "base.html" %}
+
+{% block title %}PRODUÇÃO - Comparativo Mensal{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/analise.css') }}">
   <style>
     .meta-form { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
     .meta-form label { font-weight: 600; }
@@ -31,11 +29,10 @@
     .btn-success { background-color: #28a745; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 14px; cursor: pointer; }
     .btn-success:hover { background-color: #218838; color: #fff; }
   </style>
-</head>
-<body>
-  <div class="container">
-    {% include 'partials/header_nav.html' %}
-    <div class="analysis-grid">
+{% endblock %}
+
+{% block content %}
+<div class="analysis-grid">
       <div class="card summary-table-container">
         <div class="section-header">
           <h3>Comparativo Mensal – Métricas por Mês</h3>
@@ -239,11 +236,14 @@
       </div>
     </div>
   </div>
-  {% if chart_data %}
-  <script src="{{ url_for('static', filename='js/vendor/chart.umd.min.js') }}"></script>
+{% endblock %}
+
+{% block scripts %}
+{% if chart_data %}
+<script src="{{ url_for('static', filename='js/vendor/chart.umd.min.js') }}"></script>
   <script id="chart-data" type="application/json">{{ chart_data | tojson }}</script>
   <script src="{{ url_for('static', filename='js/comparativo_mensal_chart.js') }}"></script>
-  {% endif %}
+{% endif %}
   <script>
     function toggleMetas() {
       const formMetas = document.getElementById('form-metas');
@@ -257,5 +257,4 @@
       }
     }
   </script>
-</body>
-</html>
+{% endblock %}

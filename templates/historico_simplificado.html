@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRODUÇÃO - OF-Refugo</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/historico.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+{% extends "base.html" %}
+
+{% block title %}PRODUÇÃO - OF-Refugo{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/historico.css') }}">
     <style>
         /* Cor laranja pastel clarinho para cabeçalhos específicos */
         th[data-column="refugo_flexo_kg"],
@@ -59,9 +57,10 @@
         .of-refugo-table-card { padding-left: 0 !important; padding-top: 0 !important; }
         .of-refugo-table-card .tabela { margin-top: 0; padding-top: 0; }
     </style>
-</head>
-<body>
-  <div id="filter-modal" class="modal-overlay">
+{% endblock %}
+
+{% block content %}
+<div id="filter-modal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-header">
         <h2>Filtros Avançados</h2>
@@ -125,23 +124,7 @@
       </form>
     </div>
   </div>
-  <div class="container">
-    {% include 'partials/header_nav.html' %}
-    {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}
-    <script>
-      (function() {
-          const alerts = document.querySelectorAll('.alert');
-          alerts.forEach(function(alert) {
-              setTimeout(function() {
-                  alert.style.transition = 'opacity 0.5s ease-out';
-                  alert.style.opacity = '0';
-                  setTimeout(function() {
-                      alert.remove();
-                  }, 500);
-              }, 500);
-          });
-      })();
-    </script>
+
     <div class="card">
         <div class="filter-controls">
             <div class="filter-controls-left">
@@ -162,9 +145,10 @@
     <div id="of-refugo-resultado">
         {% include 'partials/of_refugo_resultado.html' %}
     </div>
-  </div>
-  <script src="{{ url_for('static', filename='js/vendor/htmx.min.js') }}"></script>
-  <script>
+{% endblock %}
+
+{% block scripts %}
+<script>
     function recalcularColunasFixasOfRefugo() {
         const table = document.querySelector('.tabela');
         if (table) {
@@ -219,5 +203,4 @@
         }
     });
   </script>
-</body>
-</html>
+{% endblock %}

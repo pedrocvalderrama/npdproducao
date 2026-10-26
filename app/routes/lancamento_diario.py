@@ -163,14 +163,14 @@ def lancamento_diario():
             flash(str(e), 'danger')
             return render_template(
                 'lancamento_diario.html',
-                **_contexto_tela(valores=request.form),
+                **_contexto_formulario(valores=request.form),
             )
 
         if not registros:
             flash('Nenhum equipamento preenchido. Informe ao menos uma quantidade ou texto.', 'warning')
             return render_template(
                 'lancamento_diario.html',
-                **_contexto_tela(valores=request.form),
+                **_contexto_formulario(valores=request.form),
             )
 
         usuario = getattr(current_user, 'nome', None) or getattr(current_user, 'username', None)
@@ -196,15 +196,20 @@ def lancamento_diario():
             conn.close()
         return redirect(url_for('main.lancamento_diario'))
 
-    return render_template('lancamento_diario.html', **_contexto_tela())
+    return render_template('lancamento_diario.html', **_contexto_formulario())
+
+
+@main_bp.route('/historico-diario')
+def historico_diario():
+    return render_template('historico_diario.html', **_contexto_listagem())
 
 
 def _url_retorno_listagem():
-    """Volta para a mesma página/filtro da listagem; só aceita caminhos desta tela."""
+    """Volta para a mesma página/filtro do Histórico Diário; só aceita caminhos desta tela."""
     destino = request.form.get('voltar_para', '')
-    if destino.startswith('/lancamento-diario') and not destino.startswith('//'):
+    if destino.startswith('/historico-diario') and not destino.startswith('//'):
         return destino
-    return url_for('main.lancamento_diario')
+    return url_for('main.historico_diario')
 
 
 @main_bp.route('/lancamento-diario/excluir/<int:id>', methods=['POST'])
@@ -496,7 +501,15 @@ def _filtros_listagem(args):
     return filtros
 
 
-def _contexto_tela(valores=None):
+def _contexto_formulario(valores=None):
+    return {
+        'equipamentos': EQUIPAMENTOS_DIARIO,
+        'valores': valores or {},
+        'hoje': date.today().isoformat(),
+    }
+
+
+def _contexto_listagem():
     filtros = _filtros_listagem(request.args)
     condicoes, params = [], []
     if 'filtro_inicio' in filtros:
@@ -535,14 +548,11 @@ def _contexto_tela(valores=None):
         registros.append(r)
 
     return {
-        'equipamentos': EQUIPAMENTOS_DIARIO,
-        'valores': valores or {},
-        'hoje': date.today().isoformat(),
         'registros': registros,
         'filtros': filtros,
         'page': page,
         'total_paginas': total_paginas,
         'total_registros': total_registros,
         'per_page': REGISTROS_POR_PAGINA,
-        'voltar_para': url_for('main.lancamento_diario', page=page, **filtros),
+        'voltar_para': url_for('main.historico_diario', page=page, **filtros),
     }

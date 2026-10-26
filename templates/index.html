@@ -1,23 +1,19 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PRODUÇÃO - {{ page_title }}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+{% extends "base.html" %}
+
+{% block title %}PRODUÇÃO - {{ page_title }}{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
   <style>
     .alert { padding: 10px 14px; border-radius: 4px; margin: 12px 0; font-weight: 600; }
     .alert-success { background: #d4edda; color: #155724; }
     .alert-danger { background: #f8d7da; color: #721c24; }
     .alert-warning { background: #fff3cd; color: #856404; }
   </style>
-</head>
-<body>
-  <div class="main-container">
-    {% include 'partials/header_nav.html' %}
-    {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}
-    <div class="layout-grid">
+{% endblock %}
+
+{% block content %}
+<div class="layout-grid">
         <div class="form-container">
             <div class="card">
               <h1>{{ page_title }}</h1>
@@ -225,13 +221,15 @@
             </div>
         </div>
     </div>
-  </div>
-  <script>
+{% endblock %}
+
+{% block scripts %}
+<script>
     window.IDEAL_SPEED_RATES = {{ ideal_speed_rates | default({}) | tojson }};
     window.WEIGHT_TOLERANCES = {{ weight_tolerances | default({}) | tojson }};
   </script>
-  <script src="{{ url_for('static', filename='js/index.js') }}"></script>
-  <script>
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+<script>
     // Verifica se o Nº OF já existe e carrega os dados
     document.getElementById('num_of').addEventListener('blur', function() {
         const numOf = this.value.trim();
@@ -320,20 +318,4 @@
             });
     });
   </script>
-  <script>
-    // Faz as mensagens flash desaparecerem após 0.5 segundos
-    document.addEventListener('DOMContentLoaded', function() {
-        const alerts = document.querySelectorAll('.alert');
-        alerts.forEach(function(alert) {
-            setTimeout(function() {
-                alert.style.transition = 'opacity 0.5s ease-out';
-                alert.style.opacity = '0';
-                setTimeout(function() {
-                    alert.remove();
-                }, 500);
-            }, 500);
-        });
-    });
-  </script>
-</body>
-</html> 
+{% endblock %}

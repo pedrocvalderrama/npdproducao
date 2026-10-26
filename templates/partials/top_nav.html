@@ -1,0 +1,118 @@
+{% set ep = request.endpoint or '' %}
+{% set setor_producao = ep in [
+  'main.index', 'main.duplicar', 'main.lancar', 'main.editar',
+  'main.lancamento_diario', 'main.historico_diario', 'main.display_diario', 'main.historico', 'main.of_refugo', 'main.comparacao_quantidade',
+  'main.comparativo_mensal', 'main.analise'
+] %}
+
+{% set setor_custos = ep.startswith('relatorio') or ep.startswith('custos_papel') or ep.startswith('custos_operacionais') %}
+{% set setor_pedidos = ep in ['main.pedidos', 'main.movimento', 'main.atualizar_movimento'] %}
+{% set setor_config = ep.startswith('auth.') or ep.startswith('formatos.') %}
+{% set pode_ver_pedidos = current_user.is_authenticated and current_user.role != 'inicial' %}
+{% set iniciais = (current_user.nome or current_user.username or '?')[:1]|upper if current_user.is_authenticated else '?' %}
+{% set setor_ativo = 'producao' %}
+{% if setor_custos %}{% set setor_ativo = 'custos' %}
+{% elif setor_pedidos %}{% set setor_ativo = 'pedidos' %}
+{% elif setor_config %}{% set setor_ativo = 'config' %}
+{% endif %}
+
+<header class="top-shell" id="top-shell">
+  <div class="top-bar">
+    <div class="top-bar-inner">
+      <a href="{{ url_for('main.index') }}" class="top-brand" aria-label="NPD Gestão de Produção">
+        <span class="top-brand-logo" aria-hidden="true">NPD</span>
+        <span class="top-brand-divider" aria-hidden="true"></span>
+        <span class="top-brand-title">Gestão de Produção</span>
+      </a>
+
+      <nav class="top-modules" aria-label="Módulos">
+        <a href="{{ url_for('main.index') }}" class="top-module {% if setor_ativo == 'producao' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 21h18M5 21V10l7-5 7 5v11M9 21v-6h6v6"/></svg>
+          Produção
+        </a>
+        <a href="{{ url_for('relatorio.lancamento_custo') }}" class="top-module {% if setor_ativo == 'custos' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 10h3.2a1.5 1.5 0 0 1 0 3H9.5"/></svg>
+          Custos
+        </a>
+        {% if pode_ver_pedidos %}
+        <a href="{{ url_for('main.pedidos') }}" class="top-module {% if setor_ativo == 'pedidos' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+          Pedidos
+        </a>
+        {% endif %}
+      </nav>
+
+      <div class="top-bar-right">
+        <a href="{{ url_for('auth.configuracoes') }}" class="top-icon-btn {% if setor_config and ep != 'auth.admin_usuarios' %}active{% endif %}" title="Configurações" aria-label="Configurações">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </a>
+        {% if current_user.is_authenticated and current_user.is_admin %}
+        <a href="{{ url_for('auth.admin_usuarios') }}" class="top-icon-btn {% if ep == 'auth.admin_usuarios' %}active{% endif %}" title="Usuários" aria-label="Usuários">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </a>
+        {% endif %}
+        <details class="top-user">
+          <summary class="top-user-btn">
+            <span class="top-avatar" aria-hidden="true">{{ iniciais }}</span>
+            <span class="top-user-name">{{ current_user.nome.split(' ')[0] if current_user.nome else current_user.username }}</span>
+            <svg class="top-user-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </summary>
+          <div class="top-user-menu">
+            <div class="top-user-meta">
+              <strong>{{ current_user.nome }}</strong>
+              <span>{{ current_user.role_label }}</span>
+            </div>
+            <a href="{{ url_for('auth.configuracoes') }}">Configurações</a>
+            {% if current_user.is_authenticated and current_user.is_admin %}
+            <a href="{{ url_for('auth.admin_usuarios') }}">Usuários</a>
+            {% endif %}
+            <form action="{{ url_for('auth.logout') }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit">Sair</button>
+            </form>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  {% if setor_producao or (not setor_custos and not setor_pedidos and not setor_config) %}
+  <nav class="sub-bar" aria-label="Produção">
+    <div class="sub-bar-inner">
+      <a href="{{ url_for('main.index') }}" class="sub-link {% if ep in ['main.index', 'main.duplicar', 'main.lancar', 'main.editar'] %}active{% endif %}">Lançamento</a>
+      <a href="{{ url_for('main.lancamento_diario') }}" class="sub-link {% if ep == 'main.lancamento_diario' %}active{% endif %}">Lançamento diário</a>
+      <a href="{{ url_for('main.historico_diario') }}" class="sub-link {% if ep == 'main.historico_diario' %}active{% endif %}">Histórico Diário</a>
+      <a href="{{ url_for('main.display_diario') }}" class="sub-link {% if ep == 'main.display_diario' %}active{% endif %}">Display diário</a>
+      <a href="{{ url_for('main.historico') }}" class="sub-link {% if ep == 'main.historico' %}active{% endif %}">Histórico</a>
+      <a href="{{ url_for('main.of_refugo') }}" class="sub-link {% if ep == 'main.of_refugo' %}active{% endif %}">OF · Refugo</a>
+      <a href="{{ url_for('main.comparacao_quantidade') }}" class="sub-link {% if ep == 'main.comparacao_quantidade' %}active{% endif %}">Comparação qtd.</a>
+      <a href="{{ url_for('main.comparativo_mensal') }}" class="sub-link {% if ep == 'main.comparativo_mensal' %}active{% endif %}">Comparativo mensal</a>
+      <a href="{{ url_for('main.analise') }}" class="sub-link {% if ep == 'main.analise' %}active{% endif %}">Análise</a>
+    </div>
+  </nav>
+  {% elif setor_custos %}
+  <nav class="sub-bar" aria-label="Custos">
+    <div class="sub-bar-inner">
+      <a href="{{ url_for('relatorio.lancamento_custo') }}" class="sub-link {% if ep == 'relatorio.lancamento_custo' %}active{% endif %}">Lançamento de Custo</a>
+      <a href="{{ url_for('custos_papel.configurar_custos') }}" class="sub-link {% if ep.startswith('custos_papel') %}active{% endif %}">Custo Papel</a>
+      <a href="{{ url_for('custos_operacionais.configurar_custo_operacional') }}" class="sub-link {% if ep.startswith('custos_operacionais') %}active{% endif %}">Custos Adicionais</a>
+    </div>
+  </nav>
+  {% elif setor_pedidos and pode_ver_pedidos %}
+  <nav class="sub-bar" aria-label="Pedidos">
+    <div class="sub-bar-inner">
+      <a href="{{ url_for('main.pedidos') }}" class="sub-link {% if ep == 'main.pedidos' %}active{% endif %}">Pedidos</a>
+      <a href="{{ url_for('main.movimento') }}" class="sub-link {% if ep == 'main.movimento' %}active{% endif %}">Movimento</a>
+    </div>
+  </nav>
+  {% elif setor_config %}
+  <nav class="sub-bar" aria-label="Configurações">
+    <div class="sub-bar-inner">
+      <a href="{{ url_for('auth.configuracoes') }}" class="sub-link {% if ep == 'auth.configuracoes' or ep.startswith('formatos.') %}active{% endif %}">Configurações</a>
+      {% if current_user.is_authenticated and current_user.is_admin %}
+      <a href="{{ url_for('auth.admin_usuarios') }}" class="sub-link {% if ep == 'auth.admin_usuarios' %}active{% endif %}">Usuários</a>
+      {% endif %}
+    </div>
+  </nav>
+  {% endif %}
+</header>

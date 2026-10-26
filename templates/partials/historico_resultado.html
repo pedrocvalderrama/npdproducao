@@ -1,129 +1,154 @@
-﻿{# Fragmento com paginação + tabela do Histórico (Fase 4 — HTMX): extraído de
-   historico.html para poder ser devolvido isoladamente (sem o <head>/modal/
-   nav) quando a requisição vem de um filtro/ordenação/paginação via htmx. #}
-<div class="card pagination-bar" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-    <span>{{ total_registros }} registro(s) encontrado(s) — página {{ page }} de {{ total_paginas }} ({{ per_page }} por página)</span>
-    <div style="display:flex; gap:6px;">
-        {% if page > 1 %}
-        <a class="btn btn-secondary" href="{{ url_for('main.historico', page=1, **pagination_args) }}" hx-get="{{ url_for('main.historico', page=1, **pagination_args) }}" hx-target="#historico-resultado" hx-push-url="true">&laquo; Primeira</a>
-        <a class="btn btn-secondary" href="{{ url_for('main.historico', page=page-1, **pagination_args) }}" hx-get="{{ url_for('main.historico', page=page-1, **pagination_args) }}" hx-target="#historico-resultado" hx-push-url="true">&lsaquo; Anterior</a>
-        {% endif %}
-        {% if page < total_paginas %}
-        <a class="btn btn-secondary" href="{{ url_for('main.historico', page=page+1, **pagination_args) }}" hx-get="{{ url_for('main.historico', page=page+1, **pagination_args) }}" hx-target="#historico-resultado" hx-push-url="true">Próxima &rsaquo;</a>
-        <a class="btn btn-secondary" href="{{ url_for('main.historico', page=total_paginas, **pagination_args) }}" hx-get="{{ url_for('main.historico', page=total_paginas, **pagination_args) }}" hx-target="#historico-resultado" hx-push-url="true">Última &raquo;</a>
-        {% endif %}
-    </div>
+{# Fragmento com paginação + tabela do Histórico (HTMX). #}
+{% set header_azul_cols = ['num_of', 'servico', 'numero_pedido', 'papel', 'formato', 'tipo', 'qtd_cliches', 'milheiro', 'quantidade_comanda'] %}
+{% set header_verde_cols = ['impressora', 'data_impressora', 'operador_impressora', 'quantidade_impressora', 'refugo_acerto_flexo', 'refugo_flexo', 'refugo_pre_impresso', 'refugo_pct_flexo', 'velocidade_un_min_flexo', 'tempo_acerto_impressora', 'tempo_prod_impressora', 'inicio_acerto_impressora', 'fim_acerto_impressora', 'inicio_prod_impressora', 'fim_prod_impressora'] %}
+{% set header_ciano_cols = ['sos', 'data', 'operador', 'quantidade', 'tipo_impressao', 'refugo_acerto_sos', 'refugo_sos', 'refugo_pct', 'velocidade_un_min', 'tempo_acerto_s', 'tempo_prod_s', 'inicio_acerto', 'fim_acerto', 'inicio_prod', 'fim_prod'] %}
+{% set header_laranja_cols = ['perdas_un', 'refugo_producao_total', 'consumo_util', 'consumo_total'] %}
+{% set header_roxo_cols = ['robo_alca', 'data_robo', 'operador_robo', 'quantidade_robo', 'refugo_robo', 'refugo_robo_kg'] %}
+{% set header_neutro_cols = ['data_inspecao', 'quantidade_inspecao_geral', 'refugo_inspecao_final', 'refugo_inspecao_final_kg', 'perdas_geral', 'perdas_geral_kg', 'observacoes', 'inicio_prod_2', 'fim_prod_2', 'eficiencia_pct'] %}
+{% set group_ordem = header_azul_cols %}
+{% set group_impressao = header_verde_cols %}
+{% set group_sos = header_ciano_cols %}
+{% set column_order = ['num_of', 'servico', 'numero_pedido', 'papel', 'formato', 'tipo', 'qtd_cliches', 'milheiro', 'quantidade_comanda', 'impressora', 'data_impressora', 'operador_impressora', 'quantidade_impressora', 'refugo_acerto_flexo', 'refugo_flexo', 'refugo_pre_impresso', 'refugo_pct_flexo', 'velocidade_un_min_flexo', 'tempo_acerto_impressora', 'tempo_prod_impressora', 'inicio_acerto_impressora', 'fim_acerto_impressora', 'inicio_prod_impressora', 'fim_prod_impressora', 'sos', 'data', 'operador', 'quantidade', 'tipo_impressao', 'refugo_acerto_sos', 'refugo_sos', 'refugo_pct', 'velocidade_un_min', 'tempo_acerto_s', 'tempo_prod_s', 'inicio_acerto', 'fim_acerto', 'inicio_prod', 'fim_prod', 'perdas_un', 'refugo_producao_total', 'consumo_util', 'consumo_total', 'robo_alca', 'data_robo', 'operador_robo', 'quantidade_robo', 'refugo_robo', 'refugo_robo_kg', 'data_inspecao', 'quantidade_inspecao_geral', 'refugo_inspecao_final', 'refugo_inspecao_final_kg', 'perdas_geral', 'perdas_geral_kg', 'observacoes', 'inicio_prod_2', 'fim_prod_2', 'eficiencia_pct'] %}
+{% set sticky_left_cols = ['num_of', 'servico'] %}
+{% set operador_cols = ['operador', 'operador_impressora', 'operador_robo'] %}
+
+<div class="table-responsive historico-table-card">
+  <table class="tabela">
+    <thead>
+      <tr>
+      {% if lancamentos %}
+        {% for key in column_order %}
+          {% if key in lancamentos[0] %}
+          {% set header_title = none %}
+          {% if key == 'refugo_robo_kg' %}{% set header_title = 'Cálculo: Refugo Robô (peças) × (Peso Milheiro ÷ 1000)' %}{% endif %}
+          {% if key == 'refugo_inspecao_final_kg' %}{% set header_title = 'Cálculo: Refugo Inspeção Final (peças) × (Peso Milheiro ÷ 1000)' %}{% endif %}
+          {% if key == 'consumo_util' %}{% set header_title = 'Cálculo: (Quantidade SOS ÷ 1000) × Peso Milheiro' %}{% endif %}
+          {% if key == 'consumo_total' %}{% set header_title = 'Cálculo: Consumo Util + Refugo Geral (kg)' %}{% endif %}
+          {% if key == 'refugo_producao_total' %}{% set header_title = 'Cálculo: Refugo Flexo + Refugo Pré-Impresso + Refugo SOS + Refugo Acerto Flexo + Refugo Acerto SOS (total em kg)' %}{% endif %}
+          {% if key == 'refugo_pct' %}{% set header_title = 'Cálculo: (Refugo SOS em kg) ÷ (Peso boas SOS + Refugo SOS) × 100' %}{% endif %}
+          {% if key == 'refugo_pct_flexo' %}{% set header_title = 'Cálculo: (Refugo Flexo em kg) ÷ (Peso boas Impressora + Refugo Flexo) × 100' %}{% endif %}
+          {% if key == 'eficiencia_pct' %}{% set header_title = 'Cálculo: Índice composto (velocidade × acerto × refugo) × 100' %}{% endif %}
+          {% if key == 'tempo_acerto_s' %}{% set header_title = 'Cálculo: Fim Acerto − Início Acerto (SOS), em segundos' %}{% endif %}
+          {% if key == 'tempo_prod_s' %}{% set header_title = 'Cálculo: soma dos tempos de produção SOS (dias 1 a 4), em segundos' %}{% endif %}
+          {% if key == 'tempo_acerto_impressora' %}{% set header_title = 'Cálculo: Fim Acerto − Início Acerto (Impressora), em segundos' %}{% endif %}
+          {% if key == 'tempo_prod_impressora' %}{% set header_title = 'Cálculo: soma dos tempos de produção Impressora (dias 1 a 4), em segundos' %}{% endif %}
+          {% if key == 'velocidade_un_min' %}{% set header_title = 'Cálculo: Quantidade SOS ÷ (Tempo Produção SOS em minutos)' %}{% endif %}
+          {% if key == 'velocidade_un_min_flexo' %}{% set header_title = 'Cálculo: Quantidade Impressora ÷ (Tempo Produção Impressora em minutos)' %}{% endif %}
+          {% if key == 'perdas_geral_kg' %}{% set header_title = 'Cálculo: Refugo geral em kg (peso por unidade × refugo geral peças)' %}{% endif %}
+          {% set col_group = 'extra' %}
+          {% if key in group_ordem %}{% set col_group = 'ordem' %}
+          {% elif key in group_impressao %}{% set col_group = 'impressao' %}
+          {% elif key in group_sos %}{% set col_group = 'sos' %}
+          {% elif key in header_laranja_cols or key in header_roxo_cols or key in header_neutro_cols %}{% set col_group = 'extra' %}
+          {% endif %}
+          {% set sort_href = url_for('main.historico', sort_by=key, sort_order='desc' if request.args.get('sort_by') == key and request.args.get('sort_order') == 'asc' else 'asc', **preserved_args) %}
+          <th data-column="{{ key }}" data-group="{{ col_group }}" class="{% if key in header_azul_cols %}header-azul {% endif %}{% if key in header_verde_cols %}header-verde {% endif %}{% if key in header_ciano_cols %}header-ciano {% endif %}{% if key in header_laranja_cols %}header-laranja {% endif %}{% if key in header_roxo_cols %}header-roxo {% endif %}{% if key in header_neutro_cols %}header-neutro {% endif %}{% if key in sticky_left_cols %}sticky-left{% endif %}"{% if header_title %} title="{{ header_title }}"{% endif %}><a href="{{ sort_href }}" hx-get="{{ sort_href }}" hx-target="#historico-resultado" hx-push-url="true"{% if header_title %} title="{{ header_title }}"{% endif %}>
+            {% if key == 'numero_pedido' %}Número do Pedido
+            {% elif key == 'num_of' %}Nº OF
+            {% elif key == 'operador' %}Operador SOS
+            {% elif key == 'operador_impressora' %}Operador Impressora
+            {% elif key == 'operador_robo' %}Operador Robo
+            {% elif key == 'quantidade' %}Quantidade SOS
+            {% elif key == 'quantidade_impressora' %}Quantidade Impressora
+            {% elif key == 'quantidade_inspecao_geral' %}Quantidade Inspeção Final
+            {% elif key == 'quantidade_robo' %}Quantidade Robô
+            {% elif key == 'impressora' %}Impressora
+            {% elif key == 'sos' %}SOS
+            {% elif key == 'robo_alca' %}Robô Alça
+            {% elif key == 'data' %}Data SOS
+            {% elif key == 'data_robo' %}Data Robô
+            {% elif key == 'inicio_acerto' %}Início Acerto SOS
+            {% elif key == 'fim_acerto' %}Fim Acerto SOS
+            {% elif key == 'inicio_acerto_impressora' %}Início Acerto Impressora
+            {% elif key == 'fim_acerto_impressora' %}Fim Acerto Impressora
+            {% elif key == 'inicio_prod' %}Início Produção SOS
+            {% elif key == 'fim_prod' %}Fim Produção SOS
+            {% elif key == 'inicio_prod_impressora' %}Início Produção Impressora
+            {% elif key == 'fim_prod_impressora' %}Fim Produção Impressora
+            {% elif key == 'refugo_producao_total' %}Refugo Produção Total (kg)
+            {% elif key == 'refugo_robo' %}Refugo Robo (peças)
+            {% elif key == 'refugo_inspecao_final' %}Refugo Inspeção Final (peças)
+            {% elif key == 'refugo_robo_kg' %}Refugo Robô (kg)
+            {% elif key == 'refugo_inspecao_final_kg' %}Refugo Inspeção Final (kg)
+            {% elif key == 'tempo_acerto_s' %}Tempo Acerto SOS
+            {% elif key == 'tempo_prod_s' %}Tempo Produção SOS
+            {% elif key == 'tempo_acerto_impressora' %}Tempo Acerto Impressora
+            {% elif key == 'tempo_prod_impressora' %}Tempo Produção Impressora
+            {% elif key == 'velocidade_un_min' %}Velocidade SOS
+            {% elif key == 'velocidade_un_min_flexo' %}Velocidade Impressora
+            {% elif key == 'perdas_un' %}Refugo Produção (Peças)
+            {% elif key == 'perdas_geral' %}Refugo Geral Peças
+            {% elif key == 'perdas_geral_kg' %}Refugo Geral (kg)
+            {% elif key == 'milheiro' %}Peso Milheiro
+            {% elif key == 'refugo_pct' %}Refugo Porcentagem SOS
+            {% elif key == 'refugo_pct_flexo' %}Refugo Porcentagem Impressora
+            {% else %}{{ key|replace('_', ' ')|capitalize }}
+            {% endif %}</a></th>
+          {% endif %}
+        {% endfor %}
+        <th class="th-actions">Ações</th>
+      {% else %}<th>Nenhum dado para exibir</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for lancamento in lancamentos %}
+      <tr>
+        {% for key in column_order %}
+          {% if key in lancamento %}
+          {% set col_group = 'extra' %}
+          {% if key in group_ordem %}{% set col_group = 'ordem' %}
+          {% elif key in group_impressao %}{% set col_group = 'impressao' %}
+          {% elif key in group_sos %}{% set col_group = 'sos' %}
+          {% endif %}
+          <td data-group="{{ col_group }}" {% if key in sticky_left_cols %}class="sticky-left" data-column="{{ key }}"{% endif %}>
+            {% if key == 'tipo' and lancamento[key] %}
+              <span class="badge-tipo">{{ lancamento[key] }}</span>
+            {% elif key in operador_cols and lancamento[key] %}
+              <span class="op-cell">
+                <span class="op-avatar" aria-hidden="true">{{ lancamento[key]|string|truncate(2, true, '') }}</span>
+                {{ lancamento[key] }}
+              </span>
+            {% elif key in ['data', 'data_impressora', 'data_inspecao', 'data_robo'] and lancamento[key] is not none %}
+              {% set parts = lancamento[key].split('-') %}
+              {{ "%s/%s/%s"|format(parts[2], parts[1], parts[0]) }}
+            {% elif key in ['refugo_pct', 'refugo_pct_flexo', 'eficiencia_pct'] and lancamento[key] is not none %}
+              {{ "%.2f"|format(lancamento[key]|float) }}%
+            {% elif key in ['velocidade_un_min', 'velocidade_un_min_flexo', 'perdas_un', 'perdas_geral', 'perdas_geral_kg', 'milheiro', 'refugo_producao_total', 'refugo_flexo', 'refugo_pre_impresso', 'refugo_sos', 'refugo_robo', 'refugo_inspecao_final', 'refugo_robo_kg', 'refugo_inspecao_final_kg', 'refugo_acerto_flexo', 'refugo_acerto_sos', 'consumo_util', 'consumo_total'] and lancamento[key] is not none %}
+              {{ "%.2f"|format(lancamento[key]|float) }}
+            {% elif key in ['tempo_prod_s', 'tempo_acerto_s', 'tempo_prod_impressora', 'tempo_acerto_impressora'] and lancamento[key] is not none %}
+              {% set total_seconds = lancamento[key]|int %}
+              {% set hours = (total_seconds // 3600) %}
+              {% set minutes = ((total_seconds % 3600) // 60) %}
+              {% set secs = (total_seconds % 60) %}
+              {{ "%02d:%02d:%02d"|format(hours, minutes, secs) }}
+            {% else %}
+              {{ lancamento[key] if lancamento[key] is not none else '' }}
+            {% endif %}
+          </td>
+          {% endif %}
+        {% endfor %}
+        <td class="actions-cell">
+          <a href="{{ url_for('main.editar', id=lancamento.id) }}" class="btn-acao btn-editar" title="Editar"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></a>
+          <form action="{{ url_for('main.excluir', id=lancamento.id) }}" method="post" onsubmit="return confirm('Tem certeza?');" style="display:inline;margin:0;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="btn-acao btn-excluir" title="Excluir"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button></form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="26">Nenhum registro encontrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
-<div class="table-responsive card historico-table-card">
-    <table class="tabela">
-        <thead>
-            <tr>
-            {% if lancamentos %}
-                {% set header_azul_cols = ['num_of', 'servico', 'numero_pedido', 'papel', 'formato', 'tipo', 'qtd_cliches', 'milheiro', 'quantidade_comanda'] %}
-                {% set header_verde_cols = ['impressora', 'data_impressora', 'operador_impressora', 'quantidade_impressora', 'refugo_acerto_flexo', 'refugo_flexo', 'refugo_pre_impresso', 'refugo_pct_flexo', 'velocidade_un_min_flexo', 'tempo_acerto_impressora', 'tempo_prod_impressora', 'inicio_acerto_impressora', 'fim_acerto_impressora', 'inicio_prod_impressora', 'fim_prod_impressora'] %}
-                {% set header_ciano_cols = ['sos', 'data', 'operador', 'quantidade', 'tipo_impressao', 'refugo_acerto_sos', 'refugo_sos', 'refugo_pct', 'velocidade_un_min', 'tempo_acerto_s', 'tempo_prod_s', 'inicio_acerto', 'fim_acerto', 'inicio_prod', 'fim_prod'] %}
-                {% set header_laranja_cols = ['perdas_un', 'refugo_producao_total', 'consumo_util', 'consumo_total'] %}
-                {% set column_order = ['num_of', 'servico', 'numero_pedido', 'papel', 'formato', 'tipo', 'qtd_cliches', 'milheiro', 'quantidade_comanda', 'impressora', 'data_impressora', 'operador_impressora', 'quantidade_impressora', 'refugo_acerto_flexo', 'refugo_flexo', 'refugo_pre_impresso', 'refugo_pct_flexo', 'velocidade_un_min_flexo', 'tempo_acerto_impressora', 'tempo_prod_impressora', 'inicio_acerto_impressora', 'fim_acerto_impressora', 'inicio_prod_impressora', 'fim_prod_impressora', 'sos', 'data', 'operador', 'quantidade', 'tipo_impressao', 'refugo_acerto_sos', 'refugo_sos', 'refugo_pct', 'velocidade_un_min', 'tempo_acerto_s', 'tempo_prod_s', 'inicio_acerto', 'fim_acerto', 'inicio_prod', 'fim_prod', 'perdas_un', 'refugo_producao_total', 'consumo_util', 'consumo_total', 'robo_alca', 'data_robo', 'operador_robo', 'quantidade_robo', 'refugo_robo', 'refugo_robo_kg', 'data_inspecao', 'quantidade_inspecao_geral', 'refugo_inspecao_final', 'refugo_inspecao_final_kg', 'perdas_geral', 'perdas_geral_kg', 'observacoes', 'inicio_prod_2', 'fim_prod_2', 'eficiencia_pct'] %}
-                {% set sticky_left_cols = ['num_of', 'servico'] %}
-                {% for key in column_order %}
-                    {% if key in lancamentos[0] %}
-                    {% set header_title = none %}
-                    {% if key == 'refugo_robo_kg' %}{% set header_title = 'Cálculo: Refugo Robô (peças) × (Peso Milheiro ÷ 1000)' %}{% endif %}
-                    {% if key == 'refugo_inspecao_final_kg' %}{% set header_title = 'Cálculo: Refugo Inspeção Final (peças) × (Peso Milheiro ÷ 1000)' %}{% endif %}
-                    {% if key == 'consumo_util' %}{% set header_title = 'Cálculo: (Quantidade SOS ÷ 1000) × Peso Milheiro' %}{% endif %}
-                    {% if key == 'consumo_total' %}{% set header_title = 'Cálculo: Consumo Util + Refugo Geral (kg)' %}{% endif %}
-                    {% if key == 'refugo_producao_total' %}{% set header_title = 'Cálculo: Refugo Flexo + Refugo Pré-Impresso + Refugo SOS + Refugo Acerto Flexo + Refugo Acerto SOS (total em kg)' %}{% endif %}
-                    {% if key == 'refugo_pct' %}{% set header_title = 'Cálculo: (Refugo SOS em kg) ÷ (Peso boas SOS + Refugo SOS) × 100' %}{% endif %}
-                    {% if key == 'refugo_pct_flexo' %}{% set header_title = 'Cálculo: (Refugo Flexo em kg) ÷ (Peso boas Impressora + Refugo Flexo) × 100' %}{% endif %}
-                    {% if key == 'eficiencia_pct' %}{% set header_title = 'Cálculo: Índice composto (velocidade × acerto × refugo) × 100' %}{% endif %}
-                    {% if key == 'tempo_acerto_s' %}{% set header_title = 'Cálculo: Fim Acerto − Início Acerto (SOS), em segundos' %}{% endif %}
-                    {% if key == 'tempo_prod_s' %}{% set header_title = 'Cálculo: soma dos tempos de produção SOS (dias 1 a 4), em segundos' %}{% endif %}
-                    {% if key == 'tempo_acerto_impressora' %}{% set header_title = 'Cálculo: Fim Acerto − Início Acerto (Impressora), em segundos' %}{% endif %}
-                    {% if key == 'tempo_prod_impressora' %}{% set header_title = 'Cálculo: soma dos tempos de produção Impressora (dias 1 a 4), em segundos' %}{% endif %}
-                    {% if key == 'velocidade_un_min' %}{% set header_title = 'Cálculo: Quantidade SOS ÷ (Tempo Produção SOS em minutos)' %}{% endif %}
-                    {% if key == 'velocidade_un_min_flexo' %}{% set header_title = 'Cálculo: Quantidade Impressora ÷ (Tempo Produção Impressora em minutos)' %}{% endif %}
-                    {% if key == 'perdas_geral_kg' %}{% set header_title = 'Cálculo: Refugo geral em kg (peso por unidade × refugo geral peças)' %}{% endif %}
-                    {% set sort_href = url_for('main.historico', sort_by=key, sort_order='desc' if request.args.get('sort_by') == key and request.args.get('sort_order') == 'asc' else 'asc', **preserved_args) %}
-                    <th data-column="{{ key }}" class="{% if key in header_azul_cols %}header-azul {% endif %}{% if key in header_verde_cols %}header-verde {% endif %}{% if key in header_ciano_cols %}header-ciano {% endif %}{% if key in header_laranja_cols %}header-laranja {% endif %}{% if key in sticky_left_cols %}sticky-left{% endif %}"{% if header_title %} title="{{ header_title }}"{% endif %}><a href="{{ sort_href }}" hx-get="{{ sort_href }}" hx-target="#historico-resultado" hx-push-url="true"{% if header_title %} title="{{ header_title }}"{% endif %}>
-                        {% if key == 'numero_pedido' %}Número do Pedido
-                        {% elif key == 'num_of' %}Nº OF
-                        {% elif key == 'operador' %}Operador SOS
-                        {% elif key == 'operador_impressora' %}Operador Impressora
-                        {% elif key == 'operador_robo' %}Operador Robo
-                        {% elif key == 'quantidade' %}Quantidade SOS
-                        {% elif key == 'quantidade_impressora' %}Quantidade Impressora
-                        {% elif key == 'quantidade_inspecao_geral' %}Quantidade Inspeção Final
-                        {% elif key == 'quantidade_robo' %}Quantidade Robô
-                        {% elif key == 'impressora' %}Impressora
-                        {% elif key == 'sos' %}SOS
-                        {% elif key == 'robo_alca' %}Robô Alça
-                        {% elif key == 'data' %}Data SOS
-                        {% elif key == 'data_robo' %}Data Robô
-                        {% elif key == 'inicio_acerto' %}Início Acerto SOS
-                        {% elif key == 'fim_acerto' %}Fim Acerto SOS
-                        {% elif key == 'inicio_acerto_impressora' %}Início Acerto Impressora
-                        {% elif key == 'fim_acerto_impressora' %}Fim Acerto Impressora
-                        {% elif key == 'inicio_prod' %}Início Produção SOS
-                        {% elif key == 'fim_prod' %}Fim Produção SOS
-                        {% elif key == 'inicio_prod_impressora' %}Início Produção Impressora
-                        {% elif key == 'fim_prod_impressora' %}Fim Produção Impressora
-                        {% elif key == 'refugo_producao_total' %}Refugo Produção Total (kg)
-                        {% elif key == 'refugo_robo' %}Refugo Robo (peças)
-                        {% elif key == 'refugo_inspecao_final' %}Refugo Inspeção Final (peças)
-                        {% elif key == 'refugo_robo_kg' %}Refugo Robô (kg)
-                        {% elif key == 'refugo_inspecao_final_kg' %}Refugo Inspeção Final (kg)
-                        {% elif key == 'tempo_acerto_s' %}Tempo Acerto SOS
-                        {% elif key == 'tempo_prod_s' %}Tempo Produção SOS
-                        {% elif key == 'tempo_acerto_impressora' %}Tempo Acerto Impressora
-                        {% elif key == 'tempo_prod_impressora' %}Tempo Produção Impressora
-                        {% elif key == 'velocidade_un_min' %}Velocidade SOS
-                        {% elif key == 'velocidade_un_min_flexo' %}Velocidade Impressora
-                        {% elif key == 'perdas_un' %}Refugo Produção (Peças)
-                        {% elif key == 'perdas_geral' %}Refugo Geral Peças
-                        {% elif key == 'perdas_geral_kg' %}Refugo Geral (kg)
-                        {% elif key == 'milheiro' %}Peso Milheiro
-                        {% elif key == 'refugo_pct' %}Refugo Porcentagem SOS
-                        {% elif key == 'refugo_pct_flexo' %}Refugo Porcentagem Impressora
-                        {% else %}{{ key|replace('_', ' ')|capitalize }}
-                        {% endif %}</a></th>
-                    {% endif %}
-                {% endfor %}
-                <th class="th-actions">Ações</th>
-            {% else %}<th>Nenhum dado para exibir</th>{% endif %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for lancamento in lancamentos %}
-            <tr>
-                {% set sticky_left_cols = ['num_of', 'servico'] %}
-                {% for key in column_order %}
-                    {% if key in lancamento %}
-                    <td {% if key in sticky_left_cols %}class="sticky-left" data-column="{{ key }}"{% endif %}>
-                        {% if key in ['data', 'data_impressora', 'data_inspecao', 'data_robo'] and lancamento[key] is not none %}
-                            {% set parts = lancamento[key].split('-') %}
-                            {{ "%s/%s/%s"|format(parts[2], parts[1], parts[0]) }}
-                        {% elif key in ['refugo_pct', 'refugo_pct_flexo', 'eficiencia_pct'] and lancamento[key] is not none %}
-                            {{ "%.2f"|format(lancamento[key]|float) }}%
-                        {% elif key in ['velocidade_un_min', 'velocidade_un_min_flexo', 'perdas_un', 'perdas_geral', 'perdas_geral_kg', 'milheiro', 'refugo_producao_total', 'refugo_flexo', 'refugo_pre_impresso', 'refugo_sos', 'refugo_robo', 'refugo_inspecao_final', 'refugo_robo_kg', 'refugo_inspecao_final_kg', 'refugo_acerto_flexo', 'refugo_acerto_sos', 'consumo_util', 'consumo_total'] and lancamento[key] is not none %}
-                            {{ "%.2f"|format(lancamento[key]|float) }}
-                        {% elif key in ['tempo_prod_s', 'tempo_acerto_s', 'tempo_prod_impressora', 'tempo_acerto_impressora'] and lancamento[key] is not none %}
-                            {% set total_seconds = lancamento[key]|int %}
-                            {% set hours = (total_seconds // 3600) %}
-                            {% set minutes = ((total_seconds % 3600) // 60) %}
-                            {% set secs = (total_seconds % 60) %}
-                            {{ "%02d:%02d:%02d"|format(hours, minutes, secs) }}
-                        {% else %}
-                            {{ lancamento[key] if lancamento[key] is not none else '' }}
-                        {% endif %}
-                    </td>
-                    {% endif %}
-                {% endfor %}
-                <td class="actions-cell">
-                    <a href="{{ url_for('main.editar', id=lancamento.id) }}" class="btn-acao btn-editar" title="Editar"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></a>
-                    <form action="{{ url_for('main.excluir', id=lancamento.id) }}" method="post" onsubmit="return confirm('Tem certeza?');" style="display:inline;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="btn-acao btn-excluir" title="Excluir"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button></form>
-                </td>
-            </tr>
-            {% else %}<tr><td colspan="26">Nenhum registro encontrado.</td></tr>{% endfor %}
-        </tbody>
-    </table>
+
+<div class="hist-pagination pagination-bar">
+  <span>{{ total_registros }} registro(s) — página {{ page }} de {{ total_paginas }} ({{ per_page }}/página)</span>
+  <div class="hist-pagination-btns">
+    {% if page > 1 %}
+    <a href="{{ url_for('main.historico', page=1, **pagination_args) }}" hx-get="{{ url_for('main.historico', page=1, **pagination_args) }}" hx-target="#historico-resultado" hx-push-url="true">&laquo; Primeira</a>
+    <a href="{{ url_for('main.historico', page=page-1, **pagination_args) }}" hx-get="{{ url_for('main.historico', page=page-1, **pagination_args) }}" hx-target="#historico-resultado" hx-push-url="true">&lsaquo; Anterior</a>
+    {% endif %}
+    {% if page < total_paginas %}
+    <a href="{{ url_for('main.historico', page=page+1, **pagination_args) }}" hx-get="{{ url_for('main.historico', page=page+1, **pagination_args) }}" hx-target="#historico-resultado" hx-push-url="true">Próxima &rsaquo;</a>
+    <a href="{{ url_for('main.historico', page=total_paginas, **pagination_args) }}" hx-get="{{ url_for('main.historico', page=total_paginas, **pagination_args) }}" hx-target="#historico-resultado" hx-push-url="true">Última &raquo;</a>
+    {% endif %}
+  </div>
 </div>

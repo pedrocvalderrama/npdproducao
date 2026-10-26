@@ -1,0 +1,97 @@
+{% set ep = request.endpoint or '' %}
+{% set setor_producao = ep in [
+  'main.index', 'main.duplicar', 'main.lancar', 'main.editar',
+  'main.lancamento_diario', 'main.historico_diario', 'main.display_diario', 'main.historico', 'main.of_refugo', 'main.comparacao_quantidade',
+  'main.comparativo_mensal', 'main.analise'
+] %}
+
+{% set setor_custos = ep.startswith('relatorio') or ep.startswith('custos_papel') or ep.startswith('custos_operacionais') %}
+{% set setor_pedidos = ep in ['main.pedidos', 'main.movimento', 'main.atualizar_movimento'] %}
+{% set setor_config = ep.startswith('auth.') or ep.startswith('formatos.') %}
+{% set pode_ver_pedidos = current_user.is_authenticated and current_user.role != 'inicial' %}
+{% set iniciais = (current_user.nome or current_user.username or '?')[:2]|upper if current_user.is_authenticated else '?' %}
+<aside class="app-sidebar" id="app-sidebar" aria-label="Menu principal">
+  <div class="sidebar-brand">
+    <span class="sidebar-brand-mark" aria-hidden="true">N</span>
+    <div class="sidebar-brand-text">
+      <strong>NPD</strong>
+      <span>Gestão Industrial</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <details class="sidebar-group" {% if setor_producao %}open{% endif %}>
+      <summary class="sidebar-group-title">
+        <span class="sidebar-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
+        </span>
+        Produção
+      </summary>
+      <div class="sidebar-links">
+        <a href="{{ url_for('main.index') }}" class="sidebar-link {% if ep in ['main.index', 'main.duplicar', 'main.lancar', 'main.editar'] %}active{% endif %}">Lançamento</a>
+        <a href="{{ url_for('main.lancamento_diario') }}" class="sidebar-link {% if ep == 'main.lancamento_diario' %}active{% endif %}">Lançamento diário</a>
+        <a href="{{ url_for('main.historico_diario') }}" class="sidebar-link {% if ep == 'main.historico_diario' %}active{% endif %}">Histórico Diário</a>
+        <a href="{{ url_for('main.display_diario') }}" class="sidebar-link {% if ep == 'main.display_diario' %}active{% endif %}">Display diário</a>
+        <a href="{{ url_for('main.historico') }}" class="sidebar-link {% if ep == 'main.historico' %}active{% endif %}">Histórico</a>
+        <a href="{{ url_for('main.of_refugo') }}" class="sidebar-link {% if ep == 'main.of_refugo' %}active{% endif %}">OF - Refugo</a>
+        <a href="{{ url_for('main.comparacao_quantidade') }}" class="sidebar-link {% if ep == 'main.comparacao_quantidade' %}active{% endif %}">Comparação quantidade</a>
+        <a href="{{ url_for('main.comparativo_mensal') }}" class="sidebar-link {% if ep == 'main.comparativo_mensal' %}active{% endif %}">Comparativo mensal</a>
+        <a href="{{ url_for('main.analise') }}" class="sidebar-link {% if ep == 'main.analise' %}active{% endif %}">Análise</a>
+      </div>
+    </details>
+
+    <details class="sidebar-group" {% if setor_custos %}open{% endif %}>
+      <summary class="sidebar-group-title">
+        <span class="sidebar-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 10h4.5a1.5 1.5 0 0 1 0 3H9"/></svg>
+        </span>
+        Custos
+      </summary>
+      <div class="sidebar-links">
+        <a href="{{ url_for('relatorio.lancamento_custo') }}" class="sidebar-link {% if ep == 'relatorio.lancamento_custo' %}active{% endif %}">Lançamento de Custo</a>
+        <a href="{{ url_for('custos_papel.configurar_custos') }}" class="sidebar-link {% if ep.startswith('custos_papel') %}active{% endif %}">Custo Papel</a>
+        <a href="{{ url_for('custos_operacionais.configurar_custo_operacional') }}" class="sidebar-link {% if ep.startswith('custos_operacionais') %}active{% endif %}">Custos Adicionais</a>
+      </div>
+    </details>
+
+    {% if pode_ver_pedidos %}
+    <details class="sidebar-group" {% if setor_pedidos %}open{% endif %}>
+      <summary class="sidebar-group-title">
+        <span class="sidebar-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        </span>
+        Pedidos
+      </summary>
+      <div class="sidebar-links">
+        <a href="{{ url_for('main.pedidos') }}" class="sidebar-link {% if ep == 'main.pedidos' %}active{% endif %}">Pedidos</a>
+        <a href="{{ url_for('main.movimento') }}" class="sidebar-link {% if ep == 'main.movimento' %}active{% endif %}">Movimento</a>
+      </div>
+    </details>
+    {% endif %}
+  </nav>
+
+  <div class="sidebar-footer">
+    <a href="{{ url_for('auth.configuracoes') }}" class="sidebar-link sidebar-link-config {% if setor_config and ep != 'auth.admin_usuarios' %}active{% endif %}">
+      <span class="sidebar-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </span>
+      Configurações
+    </a>
+    {% if current_user.is_authenticated and current_user.is_admin %}
+    <a href="{{ url_for('auth.admin_usuarios') }}" class="sidebar-link {% if ep == 'auth.admin_usuarios' %}active{% endif %}">Usuários</a>
+    {% endif %}
+    {% if current_user.is_authenticated %}
+    <div class="sidebar-user">
+      <span class="sidebar-avatar" aria-hidden="true">{{ iniciais }}</span>
+      <div class="sidebar-user-meta">
+        <strong>{{ current_user.nome }}</strong>
+        <span>{{ current_user.role_label }}</span>
+      </div>
+      <form action="{{ url_for('auth.logout') }}" method="post" class="sidebar-logout">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="sidebar-logout-btn" title="Sair">Sair</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</aside>

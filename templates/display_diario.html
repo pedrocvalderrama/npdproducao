@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PRODUÇÃO - Display Diário</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/analise.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+{% extends "base.html" %}
+
+{% block title %}PRODUÇÃO - Display Diário{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/analise.css') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -289,7 +287,9 @@
     .painel-kpi.falta .painel-kpi-barra > span { background: var(--tv-falta); }
 
     /* Modo tela cheia */
+    /* Tela cheia cobre o shell (sidebar) — API fullscreen nativa no #painel-tv */
     .painel-tv:fullscreen {
+      z-index: 9999;
       padding: 2.2vw 3vw 1.5vw;
       border-radius: 0;
       display: flex;
@@ -371,12 +371,10 @@
       .painel-grid.um-setor .painel-kpis { grid-template-columns: 1fr; }
     }
   </style>
-</head>
-<body>
-  <div class="container">
-    {% include 'partials/header_nav.html' %}
-    {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}
-    <div class="analysis-grid">
+{% endblock %}
+
+{% block content %}
+<div class="analysis-grid">
       <div class="card summary-table-container">
         <div class="section-header">
           <h3>Produção do Dia – {{ data_selecionada_fmt }}</h3>
@@ -589,8 +587,10 @@
         <div class="painel-rodape">Atualizado às <span id="painel-hora"></span> · atualiza sozinho a cada lançamento</div>
       </div>
     </div>
-  </div>
-  <script>
+{% endblock %}
+
+{% block scripts %}
+<script>
     const INTERVALO_VERSAO_MS = 3 * 1000;
     const INTERVALO_SLIDE_MS = 10 * 1000;
     let ultimaVersaoPainel = null;
@@ -810,5 +810,4 @@
       }, 3000);
     });
   </script>
-</body>
-</html>
+{% endblock %}

@@ -1,252 +1,96 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PRODUÇÃO - Lançamento Diário</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
-  <style>
-    .alert { padding: 10px 14px; border-radius: 4px; margin-bottom: 15px; font-weight: 600; }
-    .alert-success { background: #d4edda; color: #155724; }
-    .alert-danger { background: #f8d7da; color: #721c24; }
-    .alert-warning { background: #fff3cd; color: #856404; }
-    .diario-intro { color: #555; margin-top: 8px; }
-    .diario-bloco { border: 1px solid #e3e6ea; border-radius: 6px; padding: 15px 18px; margin-top: 18px; background: #fafbfc; }
-    .diario-data-geral { background: #eef4fd; border-color: #b9d0f5; }
-    .diario-bloco h3 { color: #1a73e8; font-size: 17px; margin-bottom: 12px; }
-    .diario-numeros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 12px; }
-    .diario-textos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-    .diario-acoes { margin-top: 20px; }
-    .tabela-diario { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 15px; }
-    .tabela-diario th { background: #366092; color: #fff; padding: 8px 10px; text-align: left; }
-    .tabela-diario td { padding: 7px 10px; border: 1px solid #e0e0e0; vertical-align: top; }
-    .tabela-diario td .valor { white-space: pre-line; }
-    .tabela-diario td.num { text-align: right; white-space: nowrap; }
-    .tabela-diario tbody tr:nth-child(odd) td { background: #f5f5f5; }
-    .filtro-listagem { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
-    .filtro-listagem label { font-weight: 600; }
-    .barra-paginacao { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 10px 0; border-top: 1px solid #eee; }
-    .barra-paginacao-botoes { display: flex; gap: 8px; }
-    .btn-pequeno { border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; color: #fff; }
-    .btn-azul { background: #1a73e8; }
-    .btn-cinza { background: #6c757d; }
-    .btn-amarelo { background: #ffc107; color: #212529; }
-    .btn-vermelho { background: #dc3545; }
-    .btn-verde { background: #28a745; }
-    .tabela-diario td.acoes form { margin: 0; }
-    .acoes-visualizar, .acoes-edicao { display: flex; gap: 6px; }
-    .acoes-edicao { display: none; }
-    .campo-edicao { display: none; width: 100%; font-size: 13px; padding: 5px 8px; }
-    .tabela-diario textarea.campo-edicao { min-height: 50px; }
-    .linha-diario.editando .campo-edicao { display: block; }
-    .linha-diario.editando .valor { display: none; }
-    .linha-diario.editando .acoes-visualizar { display: none; }
-    .linha-diario.editando .acoes-edicao { display: flex; }
-    .linha-diario.editando td { background: #fff8e1 !important; white-space: normal; }
-    @media (max-width: 800px) { .diario-numeros, .diario-textos { grid-template-columns: 1fr; } }
-  </style>
-</head>
-<body>
-  <div class="main-container">
-    {% include 'partials/header_nav.html' %}
-    {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}
-    <div class="card">
-      <h1>Lançamento Diário</h1>
-      <p class="diario-intro">Preencha somente os equipamentos que tiveram lançamento. Estes dados ficam em uma tabela separada e não entram em nenhum cálculo das outras telas.</p>
-      <form action="{{ url_for('main.lancamento_diario') }}" method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="diario-bloco diario-data-geral">
-          <h3>Data de todos os lançamentos</h3>
-          <div class="diario-numeros">
-            <div class="form-group">
-              <label class="form-label" for="data_todos">Alterar todas as datas para</label>
-              <input type="date" lang="pt-BR" class="form-input" id="data_todos" value="{{ hoje }}">
-            </div>
-          </div>
-          <p class="diario-intro">Ao mudar esta data, a data de todos os equipamentos abaixo é trocada. Depois, cada um ainda pode ser ajustado individualmente.</p>
-        </div>
-        {% for prefixo, equipamento, titulo, tem_alcas in equipamentos %}
-        <div class="diario-bloco">
-          <h3>{{ titulo }}</h3>
-          <div class="diario-numeros">
-            <div class="form-group">
-              <label class="form-label" for="{{ prefixo }}_quantidade">{{ 'Quantidade Sacolas' if tem_alcas else 'Quantidade' }}</label>
-              <input type="number" min="0" step="1" inputmode="numeric" class="form-input" id="{{ prefixo }}_quantidade" name="{{ prefixo }}_quantidade" value="{{ valores.get(prefixo ~ '_quantidade', '') }}">
-            </div>
-            {% if tem_alcas %}
-            <div class="form-group">
-              <label class="form-label" for="{{ prefixo }}_quantidade_alcas">Quantidade Alças</label>
-              <input type="number" min="0" step="1" inputmode="numeric" class="form-input" id="{{ prefixo }}_quantidade_alcas" name="{{ prefixo }}_quantidade_alcas" value="{{ valores.get(prefixo ~ '_quantidade_alcas', '') }}">
-            </div>
-            {% endif %}
-            <div class="form-group">
-              <label class="form-label" for="{{ prefixo }}_meta_diaria">Meta Diária</label>
-              <input type="number" min="0" step="1" inputmode="numeric" class="form-input" id="{{ prefixo }}_meta_diaria" name="{{ prefixo }}_meta_diaria" value="{{ valores.get(prefixo ~ '_meta_diaria', '') }}">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="{{ prefixo }}_refugo_diario">Refugo Diário</label>
-              <input type="number" min="0" step="1" inputmode="numeric" class="form-input" id="{{ prefixo }}_refugo_diario" name="{{ prefixo }}_refugo_diario" value="{{ valores.get(prefixo ~ '_refugo_diario', '') }}">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="{{ prefixo }}_data">Data</label>
-              <input type="date" lang="pt-BR" class="form-input data-equipamento" id="{{ prefixo }}_data" name="{{ prefixo }}_data" value="{{ valores.get(prefixo ~ '_data') or hoje }}">
-            </div>
-          </div>
-          <div class="diario-textos">
-            <div class="form-group">
-              <label class="form-label" for="{{ prefixo }}_problemas">Problemas</label>
-              <textarea class="form-textarea" rows="3" id="{{ prefixo }}_problemas" name="{{ prefixo }}_problemas">{{ valores.get(prefixo ~ '_problemas', '') }}</textarea>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="{{ prefixo }}_solucoes">Soluções</label>
-              <textarea class="form-textarea" rows="3" id="{{ prefixo }}_solucoes" name="{{ prefixo }}_solucoes">{{ valores.get(prefixo ~ '_solucoes', '') }}</textarea>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="{{ prefixo }}_observacao">Observação</label>
-              <textarea class="form-textarea" rows="3" id="{{ prefixo }}_observacao" name="{{ prefixo }}_observacao">{{ valores.get(prefixo ~ '_observacao', '') }}</textarea>
-            </div>
-          </div>
-        </div>
-        {% endfor %}
-        <div class="diario-acoes">
-          <button type="submit" class="btn">SALVAR LANÇAMENTO DIÁRIO</button>
-        </div>
-      </form>
-    </div>
+{% extends "base.html" %}
 
-    <div class="card" id="lancamentos">
-      <h3>Lançamentos Diários</h3>
-      <form method="get" action="{{ url_for('main.lancamento_diario') }}#lancamentos" class="filtro-listagem">
-        <label for="filtro_inicio">Data inicial</label>
-        <input type="date" lang="pt-BR" class="form-input" id="filtro_inicio" name="filtro_inicio" value="{{ filtros.get('filtro_inicio', '') }}">
-        <label for="filtro_fim">Data final</label>
-        <input type="date" lang="pt-BR" class="form-input" id="filtro_fim" name="filtro_fim" value="{{ filtros.get('filtro_fim', '') }}">
-        <button type="submit" class="btn-pequeno btn-azul">Filtrar</button>
-        <a href="{{ url_for('main.lancamento_diario') }}#lancamentos" class="btn-pequeno btn-cinza">Limpar</a>
-      </form>
+{% block title %}PRODUÇÃO - Lançamento Diário{% endblock %}
 
-      <div class="barra-paginacao">
-        <span>{{ total_registros }} registro(s) encontrado(s) — página {{ page }} de {{ total_paginas }} ({{ per_page }} por página)</span>
-        <div class="barra-paginacao-botoes">
-          {% if page > 1 %}
-          <a class="btn-pequeno btn-cinza" href="{{ url_for('main.lancamento_diario', page=1, **filtros) }}#lancamentos">&laquo; Primeira</a>
-          <a class="btn-pequeno btn-cinza" href="{{ url_for('main.lancamento_diario', page=page-1, **filtros) }}#lancamentos">&lsaquo; Anterior</a>
-          {% endif %}
-          {% if page < total_paginas %}
-          <a class="btn-pequeno btn-cinza" href="{{ url_for('main.lancamento_diario', page=page+1, **filtros) }}#lancamentos">Próxima &rsaquo;</a>
-          <a class="btn-pequeno btn-cinza" href="{{ url_for('main.lancamento_diario', page=total_paginas, **filtros) }}#lancamentos">Última &raquo;</a>
-          {% endif %}
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+<style>
+  .diario-intro { color: #555; margin-top: 8px; }
+  .diario-bloco { border: 1px solid #e3e6ea; border-radius: 6px; padding: 15px 18px; margin-top: 18px; background: #fafbfc; }
+  .diario-data-geral { background: #eef4fd; border-color: #b9d0f5; }
+  .diario-bloco h3 { color: #1a73e8; font-size: 17px; margin-bottom: 12px; }
+  .diario-numeros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 12px; }
+  .diario-textos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+  .diario-acoes { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  @media (max-width: 800px) { .diario-numeros, .diario-textos { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h1>Lançamento Diário</h1>
+  <p class="diario-intro">Preencha somente os equipamentos que tiveram lançamento. Estes dados ficam em uma tabela separada e não entram em nenhum cálculo das outras telas.</p>
+  <form action="{{ url_for('main.lancamento_diario') }}" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="diario-bloco diario-data-geral">
+      <h3>Data de todos os lançamentos</h3>
+      <div class="diario-numeros">
+        <div class="form-group">
+          <label class="form-label" for="data_todos">Alterar todas as datas para</label>
+          <input type="date" lang="pt-BR" class="form-input" id="data_todos" value="{{ hoje }}">
         </div>
       </div>
-
-      <table class="tabela-diario">
-        <thead>
-          <tr>
-            <th style="width: 120px;">Data</th>
-            <th>Equipamento</th>
-            <th>Quantidade</th>
-            <th>Qtd. Alças</th>
-            <th>Meta Diária</th>
-            <th>Refugo Diário</th>
-            <th>Problemas</th>
-            <th>Soluções</th>
-            <th>Observação</th>
-            <th>Lançado por</th>
-            <th style="width: 150px;">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for r in registros %}
-          {% set f = 'form-editar-' ~ r.id %}
-          <tr class="linha-diario" id="linha-{{ r.id }}">
-            <td>
-              <span class="valor">{{ r.data_fmt }}</span>
-              <input class="campo-edicao form-input" type="date" lang="pt-BR" name="data" form="{{ f }}" value="{{ r.data }}" required>
-            </td>
-            <td>{{ r.equipamento_fmt }}</td>
-            <td class="num">
-              <span class="valor">{{ '{:,}'.format(r.quantidade or 0).replace(',', '.') }}</span>
-              <input class="campo-edicao form-input" type="number" min="0" step="1" name="quantidade" form="{{ f }}" value="{{ r.quantidade or 0 }}">
-            </td>
-            <td class="num">
-              <span class="valor">{{ '{:,}'.format(r.quantidade_alcas).replace(',', '.') if r.quantidade_alcas is not none else '—' }}</span>
-              {% if r.equipamento == 'ROBO' %}
-              <input class="campo-edicao form-input" type="number" min="0" step="1" name="quantidade_alcas" form="{{ f }}" value="{{ r.quantidade_alcas or 0 }}">
-              {% endif %}
-            </td>
-            <td class="num">
-              <span class="valor">{{ '{:,}'.format(r.meta_diaria).replace(',', '.') if r.meta_diaria is not none else '—' }}</span>
-              <input class="campo-edicao form-input" type="number" min="0" step="1" name="meta_diaria" form="{{ f }}" value="{{ r.meta_diaria if r.meta_diaria is not none else '' }}">
-            </td>
-            <td class="num">
-              <span class="valor">{{ '{:,}'.format(r.refugo_diario).replace(',', '.') if r.refugo_diario is not none else '—' }}</span>
-              <input class="campo-edicao form-input" type="number" min="0" step="1" name="refugo_diario" form="{{ f }}" value="{{ r.refugo_diario if r.refugo_diario is not none else '' }}">
-            </td>
-            <td>
-              <span class="valor">{{ r.problemas or '' }}</span>
-              <textarea class="campo-edicao form-textarea" name="problemas" form="{{ f }}" rows="2">{{ r.problemas or '' }}</textarea>
-            </td>
-            <td>
-              <span class="valor">{{ r.solucoes or '' }}</span>
-              <textarea class="campo-edicao form-textarea" name="solucoes" form="{{ f }}" rows="2">{{ r.solucoes or '' }}</textarea>
-            </td>
-            <td>
-              <span class="valor">{{ r.observacao or '' }}</span>
-              <textarea class="campo-edicao form-textarea" name="observacao" form="{{ f }}" rows="2">{{ r.observacao or '' }}</textarea>
-            </td>
-            <td>{{ r.usuario or '' }}</td>
-            <td class="acoes">
-              <form id="{{ f }}" action="{{ url_for('main.editar_lancamento_diario', id=r.id) }}" method="post">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="voltar_para" value="{{ voltar_para }}#lancamentos">
-              </form>
-              <div class="acoes-visualizar">
-                <button type="button" class="btn-pequeno btn-amarelo" onclick="editarLinha({{ r.id }})">Editar</button>
-                <form action="{{ url_for('main.excluir_lancamento_diario', id=r.id) }}" method="post" onsubmit="return confirm('Excluir este lançamento diário?');">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <input type="hidden" name="voltar_para" value="{{ voltar_para }}#lancamentos">
-                  <button type="submit" class="btn-pequeno btn-vermelho">Excluir</button>
-                </form>
-              </div>
-              <div class="acoes-edicao">
-                <button type="submit" form="{{ f }}" class="btn-pequeno btn-verde">Salvar</button>
-                <button type="button" class="btn-pequeno btn-cinza" onclick="cancelarEdicao({{ r.id }})">Cancelar</button>
-              </div>
-            </td>
-          </tr>
-          {% else %}
-          <tr><td colspan="11" style="text-align:center; padding: 20px;">Nenhum lançamento diário encontrado.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <p class="diario-intro">Ao mudar esta data, a data de todos os equipamentos abaixo é trocada. Depois, cada um ainda pode ser ajustado individualmente.</p>
     </div>
-  </div>
-  <script>
-    document.getElementById('data_todos').addEventListener('change', function() {
-      if (!this.value) return;
-      const novaData = this.value;
-      document.querySelectorAll('.data-equipamento').forEach(function(campo) {
-        campo.value = novaData;
-      });
+    {% for prefixo, equipamento, titulo, tem_alcas in equipamentos %}
+    <div class="diario-bloco">
+      <h3>{{ titulo }}</h3>
+      <div class="diario-numeros">
+        <div class="form-group">
+          <label class="form-label" for="{{ prefixo }}_quantidade">{{ 'Quantidade Sacolas' if tem_alcas else 'Quantidade' }}</label>
+          <input type="number" min="0" step="1" inputmode="numeric" class="form-input" id="{{ prefixo }}_quantidade" name="{{ prefixo }}_quantidade" value="{{ valores.get(prefixo ~ '_quantidade', '') }}">
+        </div>
+        {% if tem_alcas %}
+        <div class="form-group">
+          <label class="form-label" for="{{ prefixo }}_quantidade_alcas">Quantidade Alças</label>
+          <input type="number" min="0" step="1" inputmode="numeric" class="form-input" id="{{ prefixo }}_quantidade_alcas" name="{{ prefixo }}_quantidade_alcas" value="{{ valores.get(prefixo ~ '_quantidade_alcas', '') }}">
+        </div>
+        {% endif %}
+        <div class="form-group">
+          <label class="form-label" for="{{ prefixo }}_meta_diaria">Meta Diária</label>
+          <input type="number" min="0" step="1" inputmode="numeric" class="form-input" id="{{ prefixo }}_meta_diaria" name="{{ prefixo }}_meta_diaria" value="{{ valores.get(prefixo ~ '_meta_diaria', '') }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ prefixo }}_refugo_diario">Refugo Diário</label>
+          <input type="number" min="0" step="1" inputmode="numeric" class="form-input" id="{{ prefixo }}_refugo_diario" name="{{ prefixo }}_refugo_diario" value="{{ valores.get(prefixo ~ '_refugo_diario', '') }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ prefixo }}_data">Data</label>
+          <input type="date" lang="pt-BR" class="form-input data-equipamento" id="{{ prefixo }}_data" name="{{ prefixo }}_data" value="{{ valores.get(prefixo ~ '_data') or hoje }}">
+        </div>
+      </div>
+      <div class="diario-textos">
+        <div class="form-group">
+          <label class="form-label" for="{{ prefixo }}_problemas">Problemas</label>
+          <textarea class="form-textarea" rows="3" id="{{ prefixo }}_problemas" name="{{ prefixo }}_problemas">{{ valores.get(prefixo ~ '_problemas', '') }}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ prefixo }}_solucoes">Soluções</label>
+          <textarea class="form-textarea" rows="3" id="{{ prefixo }}_solucoes" name="{{ prefixo }}_solucoes">{{ valores.get(prefixo ~ '_solucoes', '') }}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ prefixo }}_observacao">Observação</label>
+          <textarea class="form-textarea" rows="3" id="{{ prefixo }}_observacao" name="{{ prefixo }}_observacao">{{ valores.get(prefixo ~ '_observacao', '') }}</textarea>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    <div class="diario-acoes">
+      <button type="submit" class="btn">SALVAR LANÇAMENTO DIÁRIO</button>
+      <a href="{{ url_for('main.historico_diario') }}" class="btn btn-secondary" style="background:#6c757d;">Ver Histórico Diário</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('data_todos').addEventListener('change', function() {
+    if (!this.value) return;
+    const novaData = this.value;
+    document.querySelectorAll('.data-equipamento').forEach(function(campo) {
+      campo.value = novaData;
     });
-
-    function editarLinha(id) {
-      document.getElementById('linha-' + id).classList.add('editando');
-    }
-
-    function cancelarEdicao(id) {
-      document.getElementById('form-editar-' + id).reset();
-      document.getElementById('linha-' + id).classList.remove('editando');
-    }
-
-    document.querySelectorAll('.alert').forEach(function(alert) {
-      setTimeout(function() {
-        alert.style.transition = 'opacity 0.5s ease-out';
-        alert.style.opacity = '0';
-        setTimeout(function() { alert.remove(); }, 500);
-      }, 3000);
-    });
-  </script>
-</body>
-</html>
+  });
+</script>
+{% endblock %}
