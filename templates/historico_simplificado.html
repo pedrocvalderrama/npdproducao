@@ -156,7 +156,7 @@
                 </div>
             </div>
             <h2 class="card-title-center">OF-Refugo</h2>
-            <a href="{{ url_for('main.of_refugo', export='excel', **preserved_args) }}" class="btn btn-success">Exportar Excel</a>
+            <a href="{{ url_for('main.of_refugo', export='excel', **preserved_args) }}" id="btn-exportar-of-refugo" class="btn btn-success" onclick="return exportarHistoricoComFiltros(this)">Exportar Excel</a>
         </div>
     </div>
     <div id="of-refugo-resultado">
@@ -165,6 +165,15 @@
   </div>
   <script src="{{ url_for('static', filename='js/vendor/htmx.min.js') }}"></script>
   <script>
+    // Usa os filtros da URL atual (atualizada pelo htmx), não o href estático do botão.
+    function exportarHistoricoComFiltros(link) {
+      const params = new URLSearchParams(window.location.search);
+      params.set('export', 'excel');
+      params.delete('page');
+      window.location.href = link.pathname + '?' + params.toString();
+      return false;
+    }
+
     function recalcularColunasFixasOfRefugo() {
         const table = document.querySelector('.tabela');
         if (table) {

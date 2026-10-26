@@ -158,7 +158,7 @@
                 <a href="{{ url_for('main.historico') }}" hx-get="{{ url_for('main.historico') }}" hx-target="#historico-resultado" hx-push-url="true" class="btn btn-icon btn-warning" title="Limpar Filtros"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/></svg></a>
             </div>
             <h2 class="card-title-center">Histórico de Produção</h2>
-            <a href="{{ url_for('main.historico', export='excel', **preserved_args) }}" class="btn btn-success">Exportar Excel</a>
+            <a href="{{ url_for('main.historico', export='excel', **preserved_args) }}" id="btn-exportar-historico" class="btn btn-success" onclick="return exportarHistoricoComFiltros(this)">Exportar Excel</a>
         </div>
     </div>
     <div id="historico-resultado">
@@ -167,6 +167,15 @@
   </div>
   <script src="{{ url_for('static', filename='js/vendor/htmx.min.js') }}"></script>
   <script>
+    // Usa os filtros da URL atual (atualizada pelo htmx), não o href estático do botão.
+    function exportarHistoricoComFiltros(link) {
+      const params = new URLSearchParams(window.location.search);
+      params.set('export', 'excel');
+      params.delete('page');
+      window.location.href = link.pathname + '?' + params.toString();
+      return false;
+    }
+
     // Calcula a posição left das colunas fixadas à esquerda. Roda no carregamento
     // inicial e de novo depois de cada troca via htmx (filtro/ordenação/paginação
     // sem reload da página), já que o htmx substitui a tabela por uma nova.
