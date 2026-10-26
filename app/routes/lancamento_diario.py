@@ -3,7 +3,7 @@ tabela isolada `lancamento_diario` (não entra em nenhum cálculo de produção)
 import calendar
 from datetime import date, datetime, timedelta
 
-from flask import flash, redirect, render_template, request, url_for
+from flask import flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user
 
 from ..models import get_db_connection
@@ -119,6 +119,41 @@ def _formatar_data_br(valor):
         return valor or ''
 
 
+def _garantir_sinal_painel(conn):
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS painel_diario_sinal (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            versao INTEGER NOT NULL DEFAULT 0
+        )
+        """
+    )
+    conn.execute(
+        'INSERT OR IGNORE INTO painel_diario_sinal (id, versao) VALUES (1, 0)'
+    )
+
+
+def _bump_versao_painel(conn):
+    """Sinaliza ao Display Diário (TV) que há dados novos para o painel."""
+    _garantir_sinal_painel(conn)
+    conn.execute(
+        'UPDATE painel_diario_sinal SET versao = versao + 1 WHERE id = 1'
+    )
+
+
+def _ler_versao_painel():
+    conn = get_db_connection()
+    try:
+        _garantir_sinal_painel(conn)
+        conn.commit()
+        row = conn.execute(
+            'SELECT versao FROM painel_diario_sinal WHERE id = 1'
+        ).fetchone()
+        return int(row['versao'] if row else 0)
+    finally:
+        conn.close()
+
+
 @main_bp.route('/lancamento-diario', methods=['GET', 'POST'])
 def lancamento_diario():
     if request.method == 'POST':
@@ -151,6 +186,7 @@ def lancamento_diario():
                 """,
                 [{**r, 'usuario': usuario} for r in registros],
             )
+            _bump_versao_painel(conn)
             conn.commit()
             flash(f'Lançamento diário salvo ({len(registros)} equipamento(s)).', 'success')
         except Exception as e:
@@ -176,6 +212,7 @@ def excluir_lancamento_diario(id):
     conn = get_db_connection()
     try:
         conn.execute('DELETE FROM lancamento_diario WHERE id = ?', (id,))
+        _bump_versao_painel(conn)
         conn.commit()
         flash('Lançamento diário excluído.', 'success')
     except Exception as e:
@@ -223,6 +260,7 @@ def editar_lancamento_diario(id):
             """,
             dados,
         )
+        _bump_versao_painel(conn)
         conn.commit()
         flash('Lançamento diário atualizado.', 'success')
     except Exception as e:
@@ -426,6 +464,7 @@ def salvar_metas_display_diario():
                         'DELETE FROM metas_lancamento_diario WHERE ano = ? AND mes = ? AND grupo = ?',
                         (ano, mes, grupo),
                     )
+            _bump_versao_painel(conn)
             conn.commit()
             flash(f'Metas de {MESES_NOME[mes - 1]}/{ano} salvas.', 'success')
         except Exception as e:
@@ -438,6 +477,12 @@ def salvar_metas_display_diario():
         mes=f'{ano:04d}-{mes:02d}',
         data=request.form.get('data') or None,
     ))
+
+
+@main_bp.route('/display-diario/versao')
+def versao_painel_display_diario():
+    """Versão leve para o painel TV detectar novos lançamentos sem baixar a página."""
+    return jsonify({'versao': _ler_versao_painel()})
 
 
 def _filtros_listagem(args):

@@ -258,3 +258,27 @@ def test_excluir_lancamento_diario(admin_client, app):
     resp = admin_client.post(f"/lancamento-diario/excluir/{linhas[0]['id']}", follow_redirects=True)
     assert resp.status_code == 200
     assert _linhas(app, 'SELECT * FROM lancamento_diario') == []
+
+
+def test_versao_painel_sobe_a_cada_lancamento(admin_client, app):
+    _limpar(app)
+    try:
+        v0 = admin_client.get('/display-diario/versao').get_json()['versao']
+        admin_client.post('/lancamento-diario', data={
+            'sos1_quantidade': '100', 'sos1_data': '2026-09-28',
+        }, follow_redirects=True)
+        v1 = admin_client.get('/display-diario/versao').get_json()['versao']
+        assert v1 > v0
+
+        ids = _linhas(app, 'SELECT id FROM lancamento_diario')
+        admin_client.post(f"/lancamento-diario/editar/{ids[0]['id']}", data={
+            'data': '2026-09-28', 'quantidade': '150',
+        })
+        v2 = admin_client.get('/display-diario/versao').get_json()['versao']
+        assert v2 > v1
+
+        admin_client.post(f"/lancamento-diario/excluir/{ids[0]['id']}", follow_redirects=True)
+        v3 = admin_client.get('/display-diario/versao').get_json()['versao']
+        assert v3 > v2
+    finally:
+        _limpar(app)
