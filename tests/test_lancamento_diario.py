@@ -116,6 +116,12 @@ def test_meta_do_mes_soma_grupos_e_compara_com_meta(admin_client, app):
             'robo_quantidade': '400', 'robo_quantidade_alcas': '800', 'robo_data': '2026-09-10',
             'guilhotina_quantidade': '9999', 'guilhotina_data': '2026-09-10',
         }, follow_redirects=True)
+        # Sábado 05/09/2026: não deve entrar na Meta do Mês / painel TV
+        admin_client.post('/lancamento-diario', data={
+            'sos3_quantidade': '9999', 'sos3_data': '2026-09-05',
+            'impressora_quantidade': '8888', 'impressora_data': '2026-09-05',
+            'robo_quantidade': '7777', 'robo_quantidade_alcas': '1', 'robo_data': '2026-09-05',
+        }, follow_redirects=True)
         admin_client.post('/lancamento-diario', data={
             'sos2_quantidade': '7777', 'sos2_data': '2026-10-01',
         }, follow_redirects=True)

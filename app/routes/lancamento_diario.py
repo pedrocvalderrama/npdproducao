@@ -343,6 +343,7 @@ def _montar_meta_mes(ano, mes, hoje=None):
     total_dias, dias_passados = _dias_uteis_projecao_mes(ano, mes, hoje)
     conn = get_db_connection()
     try:
+        # Painel de Metas: ignora lançamentos de sábado (strftime %w: 0=dom … 6=sáb).
         soma_por_equip = {
             r['equipamento']: r['total'] or 0
             for r in conn.execute(
@@ -350,6 +351,7 @@ def _montar_meta_mes(ano, mes, hoje=None):
                 SELECT equipamento, SUM(quantidade) AS total
                 FROM lancamento_diario
                 WHERE data >= ? AND data < ?
+                  AND CAST(strftime('%w', data) AS INTEGER) != 6
                 GROUP BY equipamento
                 """,
                 (inicio, fim),
