@@ -10,6 +10,31 @@ from ..services.formato_service import obter_formato_to_largura, normalizar_desc
 from ..utils import safe_get_int, safe_get_float, safe_get_str
 from . import main_bp
 
+def calc_media_refugo_sos_consolidada(df):
+    """Percentual consolidado: refugo_sos / (peso_boas_sos + refugo_sos) × 100."""
+    if df is None or df.empty:
+        return 0
+    rsos_kg = df['refugo_acerto_sos'].fillna(0) + df['refugo_pre_impresso'].fillna(0) + df['refugo_sos'].fillna(0)
+    peso_boas = df['quantidade'].fillna(0) * (df['milheiro'].fillna(0) / 1000)
+    soma_rsos = rsos_kg.sum()
+    den = peso_boas.sum() + soma_rsos
+    if den > 0:
+        return soma_rsos / den * 100
+    return df['refugo_pct'].mean() if 'refugo_pct' in df.columns and not df.empty else 0
+
+def calc_media_refugo_flexo_consolidada(df):
+    """Percentual consolidado: refugo_flexo / (peso_boas_flexo + refugo_flexo) × 100."""
+    if df is None or df.empty:
+        return 0
+    rflexo_kg = df['refugo_flexo'].fillna(0) + df['refugo_acerto_flexo'].fillna(0) + df['refugo_pre_impresso'].fillna(0)
+    peso_boas = df['quantidade_impressora'].fillna(0) * (df['milheiro'].fillna(0) / 1000)
+    soma_rflexo = rflexo_kg.sum()
+    den = peso_boas.sum() + soma_rflexo
+    if den > 0:
+        return soma_rflexo / den * 100
+    return df['refugo_pct_flexo'].mean() if 'refugo_pct_flexo' in df.columns and not df.empty else 0
+
+
 def _exportar_comparativo_mensal_excel(section, ano, dados):
     """Gera arquivo Excel para uma seção do comparativo mensal."""
     output = BytesIO()
@@ -145,6 +170,69 @@ def _exportar_comparativo_mensal_excel(section, ano, dados):
 
     output.seek(0)
     return output, filename
+
+def _calcular_kpis_mensais(conn, ano, mes):
+    """Histórico Diário para quantidades; Análise para velocidade e refugo."""
+    from .lancamento_diario import GRUPOS_META_DIARIO
+
+    inicio = f'{ano:04d}-{mes:02d}-01'
+    fim = f'{ano + (mes == 12):04d}-{mes % 12 + 1:02d}-01'
+    quantidades = {
+        r['equipamento']: r['total'] or 0
+        for r in conn.execute(
+            'SELECT equipamento, SUM(quantidade) AS total FROM lancamento_diario '
+            'WHERE data >= ? AND data < ? GROUP BY equipamento', (inicio, fim)
+        )
+    }
+    metas = {
+        r['grupo']: r['meta_quantidade']
+        for r in conn.execute(
+            'SELECT grupo, meta_quantidade FROM metas_lancamento_diario WHERE ano = ? AND mes = ?',
+            (ano, mes),
+        )
+    }
+    linhas = []
+    for grupo, _, _, equipamentos in GRUPOS_META_DIARIO:
+        produzido = sum(quantidades.get(e, 0) for e in equipamentos)
+        meta = metas.get(grupo)
+        produtividade = refugo = None
+        if grupo == 'ROBO':
+            dias = conn.execute(
+                'SELECT COUNT(DISTINCT data) FROM lancamento_diario '
+                'WHERE data >= ? AND data < ? AND equipamento = ? AND quantidade > 0',
+                (inicio, fim, 'ROBO'),
+            ).fetchone()[0]
+            produtividade = produzido / (dias * 8) if dias else None
+            refugo_diario = conn.execute(
+                'SELECT COALESCE(SUM(refugo_diario), 0) FROM lancamento_diario '
+                'WHERE data >= ? AND data < ? AND equipamento = ?',
+                (inicio, fim, 'ROBO'),
+            ).fetchone()[0]
+            total_robo = produzido + refugo_diario
+            refugo = refugo_diario / total_robo * 100 if total_robo > 0 else None
+        if grupo in ('SOS', 'IMPRESSORA'):
+            data_col = 'data' if grupo == 'SOS' else 'data_impressora'
+            maquina_col = 'sos' if grupo == 'SOS' else 'impressora'
+            maquinas = [m for m in MAQUINAS_SOS if m != 'RESMADEIRA'] if grupo == 'SOS' else ['IMPRESSORA']
+            marcadores = ','.join('?' for _ in maquinas)
+            df = pd.read_sql_query(
+                f'SELECT * FROM producao WHERE {data_col} >= ? AND {data_col} < ? '
+                f'AND {maquina_col} IN ({marcadores})', conn, params=[inicio, fim, *maquinas]
+            )
+            if not df.empty:
+                velocidade = 'velocidade_un_min' if grupo == 'SOS' else 'velocidade_un_min_flexo'
+                produtividade = df[velocidade].mean()
+                calculo_refugo = calc_media_refugo_sos_consolidada if grupo == 'SOS' else calc_media_refugo_flexo_consolidada
+                refugo = calculo_refugo(df)
+        linhas.append({
+            'setor': 'ROBÔ' if grupo == 'ROBO' else grupo,
+            'producao': produzido,
+            'atingimento': produzido / meta * 100 if meta and meta > 0 else None,
+            'produtividade': produtividade,
+            'refugo': refugo,
+        })
+    return linhas
+
 
 # Comparativo Mensal: métricas mês a mês (Quantidade SOS, Meta Alcançada, % Refugo SOS, % Refugo SOS+Flexo)
 @main_bp.route("/comparativo-mensal", methods=["GET", "POST"])
@@ -600,8 +688,20 @@ def comparativo_mensal():
             flash(f"Erro ao exportar: {e}", "danger")
             return redirect(url_for("main.comparativo_mensal", ano=ano_selecionado))
 
+    mes_kpi = request.args.get('mes_kpi', type=int)
+    if mes_kpi is None or not 1 <= mes_kpi <= 12:
+        mes_kpi = datetime.now().month
+    conn_kpi = get_db_connection()
+    try:
+        rows_kpi = _calcular_kpis_mensais(conn_kpi, ano_used, mes_kpi)
+    finally:
+        conn_kpi.close()
+
     return render_template(
         "comparativo_mensal.html",
+        rows_kpi=rows_kpi,
+        mes_kpi=mes_kpi,
+        meses_kpi=MESES_NOME,
         rows_mensal=rows_mensal,
         meta_quantidade=int(meta_quantidade_padrao),
         total_quantidade_fmt=total_quantidade_fmt,
@@ -922,30 +1022,6 @@ def analise():
         secs = total_seconds % 60
         return f"{hours:02}:{minutes:02}:{secs:02}"
 
-    def calc_media_refugo_sos_consolidada(df):
-        """Percentual consolidado: refugo_sos / (peso_boas_sos + refugo_sos) × 100."""
-        if df is None or df.empty:
-            return 0
-        rsos_kg = df['refugo_acerto_sos'].fillna(0) + df['refugo_pre_impresso'].fillna(0) + df['refugo_sos'].fillna(0)
-        peso_boas = df['quantidade'].fillna(0) * (df['milheiro'].fillna(0) / 1000)
-        soma_rsos = rsos_kg.sum()
-        den = peso_boas.sum() + soma_rsos
-        if den > 0:
-            return soma_rsos / den * 100
-        return df['refugo_pct'].mean() if 'refugo_pct' in df.columns and not df.empty else 0
-
-    def calc_media_refugo_flexo_consolidada(df):
-        """Percentual consolidado: refugo_flexo / (peso_boas_flexo + refugo_flexo) × 100."""
-        if df is None or df.empty:
-            return 0
-        rflexo_kg = df['refugo_flexo'].fillna(0) + df['refugo_acerto_flexo'].fillna(0) + df['refugo_pre_impresso'].fillna(0)
-        peso_boas = df['quantidade_impressora'].fillna(0) * (df['milheiro'].fillna(0) / 1000)
-        soma_rflexo = rflexo_kg.sum()
-        den = peso_boas.sum() + soma_rflexo
-        if den > 0:
-            return soma_rflexo / den * 100
-        return df['refugo_pct_flexo'].mean() if 'refugo_pct_flexo' in df.columns and not df.empty else 0
-
     def merge_refugo_consolidado(summary_df, source_df, group_col, calc_fn):
         """Substitui média simples de refugo pelo percentual consolidado por grupo."""
         if source_df is None or source_df.empty:
@@ -1178,4 +1254,4 @@ def analise():
             flash(f'Erro ao exportar: {e}', 'danger')
             return redirect(url_for('main.analise', **preserved_args))
     
-    return render_template('analise.html', machine_summary=machine_summary, operator_summary=operator_summary, machine_total=machine_total, operator_total=operator_total, impressora_summary=impressora_summary, impressora_total=impressora_total, robo_summary=robo_summary, robo_total=robo_total, operator_impressora_summary=operator_impressora_summary, operator_impressora_total=operator_impressora_total, all_operadores=ALL_OPERADORES, all_operadores_sos=OPERADORES_SOS, operadores_impressora=OPERADORES_IMPRESSORA, operadores_robo=OPERADORES_ROBO, operadores_sos=OPERADORES_SOS, preserved_args=preserved_args, action_url=url_for('main.analise')) 
+    return render_template('analise.html', machine_summary=machine_summary, operator_summary=operator_summary, machine_total=machine_total, operator_total=operator_total, impressora_summary=impressora_summary, impressora_total=impressora_total, robo_summary=robo_summary, robo_total=robo_total, operator_impressora_summary=operator_impressora_summary, operator_impressora_total=operator_impressora_total, all_operadores=ALL_OPERADORES, all_operadores_sos=OPERADORES_SOS, operadores_impressora=OPERADORES_IMPRESSORA, operadores_robo=OPERADORES_ROBO, operadores_sos=OPERADORES_SOS, preserved_args=preserved_args, action_url=url_for('main.analise'))
