@@ -203,13 +203,13 @@ def _calcular_kpis_mensais(conn, ano, mes):
                 (inicio, fim, 'ROBO'),
             ).fetchone()[0]
             produtividade = produzido / (dias * 8) if dias else None
-            refugo_diario = conn.execute(
-                'SELECT COALESCE(SUM(refugo_diario), 0) FROM lancamento_diario '
-                'WHERE data >= ? AND data < ? AND equipamento = ?',
-                (inicio, fim, 'ROBO'),
+            refugo_pecas = conn.execute(
+                'SELECT COALESCE(SUM(refugo_robo), 0) FROM producao '
+                "WHERE data_robo >= ? AND data_robo < ? AND TRIM(COALESCE(robo_alca, '')) != ''",
+                (inicio, fim),
             ).fetchone()[0]
-            total_robo = produzido + refugo_diario
-            refugo = refugo_diario / total_robo * 100 if total_robo > 0 else None
+            total_robo = produzido + refugo_pecas
+            refugo = refugo_pecas / total_robo * 100 if total_robo > 0 else None
         if grupo in ('SOS', 'IMPRESSORA'):
             data_col = 'data' if grupo == 'SOS' else 'data_impressora'
             maquina_col = 'sos' if grupo == 'SOS' else 'impressora'

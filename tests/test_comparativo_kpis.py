@@ -33,6 +33,9 @@ def test_kpis_mes_fontes_datas_e_exclusao_resmadeira():
              2000, 1000, 10, 200, 50, 1, 1, 2, 2, 1, 0, 0),
             ('2026-09-03', NULL, 'RESMADEIRA', NULL,
              99999, 0, 10, 999, 0, 100, 100, 100, 0, 0, 0, 0);
+        ALTER TABLE producao ADD COLUMN data_robo TEXT;
+        ALTER TABLE producao ADD COLUMN robo_alca TEXT;
+        ALTER TABLE producao ADD COLUMN refugo_robo REAL;
     ''')
     try:
         sos, impressora, robo = _calcular_kpis_mensais(conn, 2026, 9)
@@ -56,6 +59,14 @@ def test_kpis_mes_fontes_datas_e_exclusao_resmadeira():
             UPDATE lancamento_diario SET refugo_diario = 80 WHERE equipamento = 'ROBO' AND data = '2026-09-03';
             INSERT INTO lancamento_diario VALUES ('2025-09-01', 'ROBO', 900, 99999);
             UPDATE lancamento_diario SET refugo_diario = 99999 WHERE equipamento = 'IMPRESSORA';
+            INSERT INTO producao (data_robo, robo_alca, refugo_robo) VALUES
+                ('2026-09-01', 'APLA-2R', 30),
+                ('2026-09-30', 'APLA-2R', 70),
+                ('2026-10-01', 'APLA-2R', 99999),
+                ('2025-09-01', 'APLA-2R', 99999),
+                ('2026-09-01', NULL, 99999),
+                ('2026-09-01', '   ', 99999),
+                (NULL, 'APLA-2R', 99999);
         ''')
         assert _calcular_kpis_mensais(conn, 2026, 9)[2]['produtividade'] == 50
         assert _calcular_kpis_mensais(conn, 2026, 9)[2]['refugo'] == pytest.approx(100 / 900 * 100)
