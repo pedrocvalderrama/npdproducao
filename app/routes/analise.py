@@ -174,6 +174,7 @@ def _exportar_comparativo_mensal_excel(section, ano, dados):
 def _calcular_kpis_mensais(conn, ano, mes):
     """Histórico Diário para quantidades; Análise para velocidade e refugo."""
     from .lancamento_diario import GRUPOS_META_DIARIO
+    from ..business import PROD_DIA_KEYS, calc_tempo_producao_segmento
 
     inicio = f'{ano:04d}-{mes:02d}-01'
     fim = f'{ano + (mes == 12):04d}-{mes % 12 + 1:02d}-01'
@@ -196,13 +197,15 @@ def _calcular_kpis_mensais(conn, ano, mes):
         produzido = sum(quantidades.get(e, 0) for e in equipamentos)
         meta = metas.get(grupo)
         produtividade = refugo = None
+        horas = 0
         if grupo == 'ROBO':
             dias = conn.execute(
                 'SELECT COUNT(DISTINCT data) FROM lancamento_diario '
                 'WHERE data >= ? AND data < ? AND equipamento = ? AND quantidade > 0',
                 (inicio, fim, 'ROBO'),
             ).fetchone()[0]
-            produtividade = produzido / (dias * 8) if dias else None
+            horas = dias * 9
+            produtividade = produzido / horas if horas else None
             refugo_pecas = conn.execute(
                 'SELECT COALESCE(SUM(refugo_robo), 0) FROM producao '
                 "WHERE data_robo >= ? AND data_robo < ? AND TRIM(COALESCE(robo_alca, '')) != ''",
@@ -220,6 +223,15 @@ def _calcular_kpis_mensais(conn, ano, mes):
                 f'AND {maquina_col} IN ({marcadores})', conn, params=[inicio, fim, *maquinas]
             )
             if not df.empty:
+                pedidos = df.to_dict('records')
+                if grupo == 'SOS':
+                    segundos = sum(
+                        calc_tempo_producao_segmento(p.get(k1), p.get(k2))
+                        for p in pedidos for k1, k2 in PROD_DIA_KEYS
+                    )
+                else:
+                    segundos = sum(calc_tempo_producao_impressora(p) for p in pedidos)
+                horas = segundos / 3600
                 velocidade = 'velocidade_un_min' if grupo == 'SOS' else 'velocidade_un_min_flexo'
                 produtividade = df[velocidade].mean()
                 calculo_refugo = calc_media_refugo_sos_consolidada if grupo == 'SOS' else calc_media_refugo_flexo_consolidada
@@ -229,6 +241,7 @@ def _calcular_kpis_mensais(conn, ano, mes):
             'producao': produzido,
             'atingimento': produzido / meta * 100 if meta and meta > 0 else None,
             'produtividade': produtividade,
+            'horas': horas,
             'refugo': refugo,
         })
     return linhas

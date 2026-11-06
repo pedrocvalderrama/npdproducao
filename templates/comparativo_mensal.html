@@ -173,6 +173,7 @@
               <th scope="col">Produção Realizada</th>
               <th scope="col">Atingimento de Meta</th>
               <th scope="col">Produtividade</th>
+              <th scope="col">Horas</th>
               <th scope="col">Refugo</th>
             </tr>
           </thead>
@@ -183,6 +184,7 @@
               <td>{{ "{:,.0f}".format(r.producao)|replace(',', '.') }}</td>
               <td>{{ ("%.2f"|format(r.atingimento)|replace('.', ',')) ~ '%' if r.atingimento is not none else '—' }}</td>
               <td>{{ ("%.2f"|format(r.produtividade)|replace('.', ',')) ~ (' sacolas/h' if r.setor == 'ROBÔ' else ' sacos/min') if r.produtividade is not none and r.produtividade == r.produtividade else '—' }}</td>
+              <td>{{ "%.2f"|format(r.horas)|replace('.', ',') }} h</td>
               <td>{{ ("%.2f"|format(r.refugo)|replace('.', ',')) ~ '%' if r.refugo is not none and r.refugo == r.refugo else '—' }}</td>
             </tr>
             {% endfor %}
@@ -191,13 +193,14 @@
         <details style="margin-top: 15px;">
           <summary>Fórmulas dos KPI's</summary>
           <ul>
+            <li><strong>Horas:</strong> soma dos tempos de produção dos pedidos do mês, em horas decimais, pela Data SOS ou Data Impressora. Soma os quatro períodos de produção e considera viradas de dia. SOS exclui a resmadeira. Para Robô, número de datas distintas com Quantidade maior que zero no Histórico Diário × 9 horas, como na produtividade.</li>
             <li><strong>Produção Realizada:</strong> soma da Quantidade do Histórico Diário no mês e ano selecionados, por setor. SOS soma SOS 1 a SOS 4; Robô considera a quantidade de sacolas.</li>
             <li><strong>Atingimento de Meta:</strong> Produção Realizada ÷ meta do setor cadastrada em Display Diário → Meta do Mês × 100. Sem meta positiva, mostra “—”.</li>
             <li><strong>Produtividade (sacos/min):</strong> média aritmética das velocidades registradas na Análise: velocidade_un_min para SOS e velocidade_un_min_flexo para Impressora. Valores nulos são ignorados.</li>
             <li><strong>Refugo SOS (%):</strong> R ÷ (P + R) × 100, sendo R = soma de Refugo Acerto SOS + Refugo Pré-Impresso + Refugo SOS e P = soma de Quantidade SOS × Milheiro ÷ 1.000.</li>
             <li><strong>Refugo Impressora (%):</strong> R ÷ (P + R) × 100, sendo R = soma de Refugo Flexo + Refugo Acerto Flexo + Refugo Pré-Impresso e P = soma de Quantidade Impressora × Milheiro ÷ 1.000.</li>
             <li>Como na Análise, se P + R não for positivo, o refugo usa a média dos percentuais registrados. Os registros são filtrados pela Data SOS ou Data Impressora. SOS exclui a resmadeira.</li>
-            <li><strong>Produtividade Robô (sacolas/h):</strong> Produção Realizada do Robô ÷ (número de datas distintas com Quantidade maior que zero no Histórico Diário do Robô × 8 horas). Vários lançamentos na mesma data contam como um dia. Sem dias com produção, mostra “—”.</li>
+            <li><strong>Produtividade Robô (sacolas/h):</strong> Produção Realizada do Robô ÷ (número de datas distintas com Quantidade maior que zero no Histórico Diário do Robô × 9 horas). Vários lançamentos na mesma data contam como um dia. Sem dias com produção, mostra “—”.</li>
             <li><strong>Refugo Robô (%):</strong> R ÷ (Quantidade + R) × 100, sendo R = soma do Refugo Robô (peças) do Histórico, pela Data Robô e com máquina Robô preenchida, como na Análise. Quantidade = Produção Realizada do Robô no Histórico Diário. Ambos consideram o mês e ano selecionados. Refugo não informado conta como zero. Se Quantidade + R for zero, mostra “—”.</li>
           </ul>
         </details>

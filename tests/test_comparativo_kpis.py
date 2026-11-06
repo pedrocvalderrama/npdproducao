@@ -36,19 +36,34 @@ def test_kpis_mes_fontes_datas_e_exclusao_resmadeira():
         ALTER TABLE producao ADD COLUMN data_robo TEXT;
         ALTER TABLE producao ADD COLUMN robo_alca TEXT;
         ALTER TABLE producao ADD COLUMN refugo_robo REAL;
+        ALTER TABLE producao ADD COLUMN inicio_prod TEXT;
+        ALTER TABLE producao ADD COLUMN fim_prod TEXT;
+        ALTER TABLE producao ADD COLUMN inicio_prod_2 TEXT;
+        ALTER TABLE producao ADD COLUMN fim_prod_2 TEXT;
+        ALTER TABLE producao ADD COLUMN inicio_prod_impressora TEXT;
+        ALTER TABLE producao ADD COLUMN fim_prod_impressora TEXT;
+        ALTER TABLE producao ADD COLUMN inicio_prod_impressora_2 TEXT;
+        ALTER TABLE producao ADD COLUMN fim_prod_impressora_2 TEXT;
+        UPDATE producao SET inicio_prod = '08:00', fim_prod = '10:30',
+            inicio_prod_2 = '23:00', fim_prod_2 = '01:00',
+            inicio_prod_impressora = '09:00', fim_prod_impressora = '12:00',
+            inicio_prod_impressora_2 = '13:00', fim_prod_impressora_2 = '14:30';
     ''')
     try:
         sos, impressora, robo = _calcular_kpis_mensais(conn, 2026, 9)
         assert sos['producao'] == 1500  # Inclui sábado do Histórico Diário.
         assert sos['atingimento'] == 75
         assert sos['produtividade'] == 150
+        assert sos['horas'] == 9
         assert sos['refugo'] == pytest.approx(8 / 38 * 100)
         assert impressora['producao'] == 800
         assert impressora['atingimento'] is None
         assert impressora['produtividade'] == 50
+        assert impressora['horas'] == 4.5
         assert impressora['refugo'] == pytest.approx(4 / 14 * 100)
         assert robo['producao'] == 300
-        assert robo['produtividade'] == 37.5
+        assert robo['produtividade'] == pytest.approx(300 / 9)
+        assert robo['horas'] == 9
         assert robo['atingimento'] is None
         assert robo['refugo'] == 0
         conn.executescript('''
@@ -68,7 +83,9 @@ def test_kpis_mes_fontes_datas_e_exclusao_resmadeira():
                 ('2026-09-01', '   ', 99999),
                 (NULL, 'APLA-2R', 99999);
         ''')
-        assert _calcular_kpis_mensais(conn, 2026, 9)[2]['produtividade'] == 50
+        assert _calcular_kpis_mensais(conn, 2026, 9)[2]['produtividade'] == pytest.approx(800 / 18)
+        assert _calcular_kpis_mensais(conn, 2026, 9)[2]['horas'] == 18
+        assert _calcular_kpis_mensais(conn, 2026, 12)[2]['horas'] == 0
         assert _calcular_kpis_mensais(conn, 2026, 9)[2]['refugo'] == pytest.approx(100 / 900 * 100)
         assert _calcular_kpis_mensais(conn, 2026, 12)[2]['refugo'] is None
         assert _calcular_kpis_mensais(conn, 2026, 12)[2]['produtividade'] is None
