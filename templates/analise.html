@@ -1,19 +1,18 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PRODUÇÃO - Análise</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/analise.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+{% extends "base.html" %}
+
+{% block title %}PRODUÇÃO - Análise{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/analise.css') }}">
   <style>
     .btn-success { background-color: #28a745; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 14px; cursor: pointer; display: inline-block; }
     .btn-success:hover { background-color: #218838; color: #fff; }
     .section-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   </style>
-</head>
-<body>
-  <div id="sos-filter-modal" class="modal-overlay">
+{% endblock %}
+
+{% block content %}
+<div id="sos-filter-modal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-header">
         <h2>Filtros - Análise SOS</h2>
@@ -308,7 +307,7 @@
     </div>
   </div>
   <div class="container">
-    {% include 'partials/header_nav.html' %}
+    
     <div class="analysis-grid">
         <div class="card summary-table-container">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -450,7 +449,10 @@
         </div>
     </div>
   </div>
-  <script>
+{% endblock %}
+
+{% block scripts %}
+<script>
     function clearOperatorFilters() {
       const url = new URL(window.location.href);
       // Remove todos os parâmetros que começam com 'operator_' (mas não 'operator_impressora_')
@@ -505,5 +507,4 @@
       window.location.href = url.toString();
     }
   </script>
-</body>
-</html> 
+{% endblock %}

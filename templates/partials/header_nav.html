@@ -1,9 +1,10 @@
 {% set ep = request.endpoint or '' %}
 {% set setor_producao = ep in [
   'main.index', 'main.duplicar', 'main.lancar', 'main.editar',
-  'main.lancamento_diario', 'main.display_diario', 'main.historico', 'main.of_refugo', 'main.comparacao_quantidade',
+  'main.lancamento_diario', 'main.historico_diario', 'main.display_diario', 'main.historico', 'main.of_refugo', 'main.comparacao_quantidade',
   'main.comparativo_mensal', 'main.analise'
 ] %}
+
 {% set setor_custos = ep.startswith('relatorio') or ep.startswith('custos_papel') or ep.startswith('custos_operacionais') %}
 {% set setor_pedidos = ep in ['main.pedidos', 'main.movimento', 'main.atualizar_movimento'] %}
 {% set pode_ver_pedidos = current_user.is_authenticated and current_user.role != 'inicial' %}
@@ -22,6 +23,7 @@
     {% if setor_producao %}
       <a href="{{ url_for('main.index') }}" class="tab {% if ep in ['main.index', 'main.duplicar', 'main.lancar', 'main.editar'] %}active{% endif %}">Lançamento</a>
       <a href="{{ url_for('main.lancamento_diario') }}" class="tab {% if ep == 'main.lancamento_diario' %}active{% endif %}">Lançamento Diário</a>
+      <a href="{{ url_for('main.historico_diario') }}" class="tab {% if ep == 'main.historico_diario' %}active{% endif %}">Histórico Diário</a>
       <a href="{{ url_for('main.display_diario') }}" class="tab {% if ep == 'main.display_diario' %}active{% endif %}">Display Diário</a>
       <a href="{{ url_for('main.historico') }}" class="tab {% if ep == 'main.historico' %}active{% endif %}">Histórico</a>
       <a href="{{ url_for('main.of_refugo') }}" class="tab {% if ep == 'main.of_refugo' %}active{% endif %}">OF-Refugo</a>

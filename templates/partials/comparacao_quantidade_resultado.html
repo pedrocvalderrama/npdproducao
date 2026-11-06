@@ -1,17 +1,4 @@
 {# Fragmento com paginação + tabela de Comparação Quantidade (Fase 4 — HTMX). #}
-<div class="card pagination-bar" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-    <span>{{ total_registros }} registro(s) encontrado(s) — página {{ page }} de {{ total_paginas }} ({{ per_page }} por página)</span>
-    <div style="display:flex; gap:6px;">
-        {% if page > 1 %}
-        <a class="btn btn-secondary" href="{{ url_for('main.comparacao_quantidade', page=1, **pagination_args) }}" hx-get="{{ url_for('main.comparacao_quantidade', page=1, **pagination_args) }}" hx-target="#comparacao-resultado" hx-push-url="true">&laquo; Primeira</a>
-        <a class="btn btn-secondary" href="{{ url_for('main.comparacao_quantidade', page=page-1, **pagination_args) }}" hx-get="{{ url_for('main.comparacao_quantidade', page=page-1, **pagination_args) }}" hx-target="#comparacao-resultado" hx-push-url="true">&lsaquo; Anterior</a>
-        {% endif %}
-        {% if page < total_paginas %}
-        <a class="btn btn-secondary" href="{{ url_for('main.comparacao_quantidade', page=page+1, **pagination_args) }}" hx-get="{{ url_for('main.comparacao_quantidade', page=page+1, **pagination_args) }}" hx-target="#comparacao-resultado" hx-push-url="true">Próxima &rsaquo;</a>
-        <a class="btn btn-secondary" href="{{ url_for('main.comparacao_quantidade', page=total_paginas, **pagination_args) }}" hx-get="{{ url_for('main.comparacao_quantidade', page=total_paginas, **pagination_args) }}" hx-target="#comparacao-resultado" hx-push-url="true">Última &raquo;</a>
-        {% endif %}
-    </div>
-</div>
 <div id="table-wrapper-comparacao" class="table-responsive card comparacao-table-card">
     <table class="tabela">
         <thead>
@@ -80,4 +67,17 @@
             {% else %}<tr><td colspan="12">Nenhum registro encontrado.</td></tr>{% endfor %}
         </tbody>
     </table>
+</div>
+<div class="card pagination-bar" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-top:12px;">
+    <span>{{ total_registros }} registro(s) encontrado(s) — página {{ page }} de {{ total_paginas }} ({{ per_page }} por página)</span>
+    <div style="display:flex; gap:6px;">
+        {% if page > 1 %}
+        <a class="btn btn-secondary" href="{{ url_for('main.comparacao_quantidade', page=1, **pagination_args) }}" hx-get="{{ url_for('main.comparacao_quantidade', page=1, **pagination_args) }}" hx-target="#comparacao-resultado" hx-push-url="true">&laquo; Primeira</a>
+        <a class="btn btn-secondary" href="{{ url_for('main.comparacao_quantidade', page=page-1, **pagination_args) }}" hx-get="{{ url_for('main.comparacao_quantidade', page=page-1, **pagination_args) }}" hx-target="#comparacao-resultado" hx-push-url="true">&lsaquo; Anterior</a>
+        {% endif %}
+        {% if page < total_paginas %}
+        <a class="btn btn-secondary" href="{{ url_for('main.comparacao_quantidade', page=page+1, **pagination_args) }}" hx-get="{{ url_for('main.comparacao_quantidade', page=page+1, **pagination_args) }}" hx-target="#comparacao-resultado" hx-push-url="true">Próxima &rsaquo;</a>
+        <a class="btn btn-secondary" href="{{ url_for('main.comparacao_quantidade', page=total_paginas, **pagination_args) }}" hx-get="{{ url_for('main.comparacao_quantidade', page=total_paginas, **pagination_args) }}" hx-target="#comparacao-resultado" hx-push-url="true">Última &raquo;</a>
+        {% endif %}
+    </div>
 </div>

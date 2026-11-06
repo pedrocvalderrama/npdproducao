@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PRODUÇÃO - Comparativo Mensal</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/analise.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+{% extends "base.html" %}
+
+{% block title %}PRODUÇÃO - Comparativo Mensal{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/analise.css') }}">
   <style>
     .meta-form { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
     .meta-form label { font-weight: 600; }
@@ -31,11 +29,10 @@
     .btn-success { background-color: #28a745; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 14px; cursor: pointer; }
     .btn-success:hover { background-color: #218838; color: #fff; }
   </style>
-</head>
-<body>
-  <div class="container">
-    {% include 'partials/header_nav.html' %}
-    <div class="analysis-grid">
+{% endblock %}
+
+{% block content %}
+<div class="analysis-grid">
       <div class="card summary-table-container">
         <div class="section-header">
           <h3>Comparativo Mensal – Métricas por Mês</h3>
@@ -43,6 +40,7 @@
         </div>
         <form method="get" action="{{ action_url }}" class="meta-form" id="form-meta">
           <label for="ano">Ano:</label>
+          <input type="hidden" name="mes_kpi" value="{{ mes_kpi }}">
           <select id="ano" name="ano" onchange="document.getElementById('form-meta').submit()">
             {% for a in anos_disponiveis %}
             <option value="{{ a }}" {% if ano_selecionado == a|string %}selected{% endif %}>{{ a }}</option>
@@ -156,6 +154,54 @@
           </tbody>
         </table>
         <div class="section-header" style="margin-top: 30px;">
+          <h3 id="kpis">KPI's</h3>
+          <form method="get" action="{{ action_url }}#kpis" class="meta-form" style="margin-bottom: 0;">
+            <input type="hidden" name="ano" value="{{ ano_selecionado }}">
+            <label for="mes-kpi">Mês:</label>
+            <select id="mes-kpi" name="mes_kpi" onchange="this.form.submit()">
+              {% for nome in meses_kpi %}
+              <option value="{{ loop.index }}" {% if mes_kpi == loop.index %}selected{% endif %}>{{ nome }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn">Atualizar KPI's</button>
+          </form>
+        </div>
+        <table class="tabela-mensal">
+          <thead>
+            <tr>
+              <th scope="col">Setor</th>
+              <th scope="col">Produção Realizada</th>
+              <th scope="col">Atingimento de Meta</th>
+              <th scope="col">Produtividade</th>
+              <th scope="col">Refugo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows_kpi %}
+            <tr>
+              <td>{{ r.setor }}</td>
+              <td>{{ "{:,.0f}".format(r.producao)|replace(',', '.') }}</td>
+              <td>{{ ("%.2f"|format(r.atingimento)|replace('.', ',')) ~ '%' if r.atingimento is not none else '—' }}</td>
+              <td>{{ ("%.2f"|format(r.produtividade)|replace('.', ',')) ~ (' sacolas/h' if r.setor == 'ROBÔ' else ' sacos/min') if r.produtividade is not none and r.produtividade == r.produtividade else '—' }}</td>
+              <td>{{ ("%.2f"|format(r.refugo)|replace('.', ',')) ~ '%' if r.refugo is not none and r.refugo == r.refugo else '—' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <details style="margin-top: 15px;">
+          <summary>Fórmulas dos KPI's</summary>
+          <ul>
+            <li><strong>Produção Realizada:</strong> soma da Quantidade do Histórico Diário no mês e ano selecionados, por setor. SOS soma SOS 1 a SOS 4; Robô considera a quantidade de sacolas.</li>
+            <li><strong>Atingimento de Meta:</strong> Produção Realizada ÷ meta do setor cadastrada em Display Diário → Meta do Mês × 100. Sem meta positiva, mostra “—”.</li>
+            <li><strong>Produtividade (sacos/min):</strong> média aritmética das velocidades registradas na Análise: velocidade_un_min para SOS e velocidade_un_min_flexo para Impressora. Valores nulos são ignorados.</li>
+            <li><strong>Refugo SOS (%):</strong> R ÷ (P + R) × 100, sendo R = soma de Refugo Acerto SOS + Refugo Pré-Impresso + Refugo SOS e P = soma de Quantidade SOS × Milheiro ÷ 1.000.</li>
+            <li><strong>Refugo Impressora (%):</strong> R ÷ (P + R) × 100, sendo R = soma de Refugo Flexo + Refugo Acerto Flexo + Refugo Pré-Impresso e P = soma de Quantidade Impressora × Milheiro ÷ 1.000.</li>
+            <li>Como na Análise, se P + R não for positivo, o refugo usa a média dos percentuais registrados. Os registros são filtrados pela Data SOS ou Data Impressora. SOS exclui a resmadeira.</li>
+            <li><strong>Produtividade Robô (sacolas/h):</strong> Produção Realizada do Robô ÷ (número de datas distintas com Quantidade maior que zero no Histórico Diário do Robô × 8 horas). Vários lançamentos na mesma data contam como um dia. Sem dias com produção, mostra “—”.</li>
+            <li><strong>Refugo Robô (%):</strong> R ÷ (Quantidade + R) × 100, sendo R = soma de Refugo Diário e Quantidade = soma da Quantidade dos lançamentos do Robô no Histórico Diário, no mês e ano selecionados. Valores de Refugo Diário não informados contam como zero. Se Quantidade + R for zero, mostra “—”.</li>
+          </ul>
+        </details>
+        <div class="section-header" style="margin-top: 30px;">
           <h3>Consumo de Papel por Bobina</h3>
           <a href="{{ url_for('main.comparativo_mensal', export='excel', section='bobina', ano=ano_selecionado) }}" class="btn btn-success">Exportar Excel</a>
         </div>
@@ -239,11 +285,14 @@
       </div>
     </div>
   </div>
-  {% if chart_data %}
-  <script src="{{ url_for('static', filename='js/vendor/chart.umd.min.js') }}"></script>
+{% endblock %}
+
+{% block scripts %}
+{% if chart_data %}
+<script src="{{ url_for('static', filename='js/vendor/chart.umd.min.js') }}"></script>
   <script id="chart-data" type="application/json">{{ chart_data | tojson }}</script>
   <script src="{{ url_for('static', filename='js/comparativo_mensal_chart.js') }}"></script>
-  {% endif %}
+{% endif %}
   <script>
     function toggleMetas() {
       const formMetas = document.getElementById('form-metas');
@@ -257,5 +306,4 @@
       }
     }
   </script>
-</body>
-</html>
+{% endblock %}

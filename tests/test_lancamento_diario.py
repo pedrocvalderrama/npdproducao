@@ -187,10 +187,10 @@ def test_editar_lancamento_diario_na_linha(admin_client, app):
         resp = admin_client.post(f"/lancamento-diario/editar/{ids['SOS 1']}", data={
             'data': '2026-09-29', 'quantidade': '150', 'quantidade_alcas': '999',
             'problemas': 'Corrigido', 'solucoes': '', 'observacao': 'Obs nova',
-            'voltar_para': '/lancamento-diario?page=1#lancamentos',
+            'voltar_para': '/historico-diario?page=1',
         })
         assert resp.status_code == 302
-        assert resp.headers['Location'].endswith('/lancamento-diario?page=1#lancamentos')
+        assert resp.headers['Location'].endswith('/historico-diario?page=1')
 
         sos1 = _linhas(app, 'SELECT * FROM lancamento_diario WHERE id = ?', (ids['SOS 1'],))[0]
         assert (sos1['data'], sos1['quantidade'], sos1['quantidade_alcas']) == ('2026-09-29', 150, None)
@@ -211,7 +211,7 @@ def test_editar_lancamento_diario_na_linha(admin_client, app):
         resp = admin_client.post(f"/lancamento-diario/editar/{ids['ROBO']}", data={
             'data': '2026-09-28', 'quantidade': '60', 'voltar_para': 'https://site-externo.com',
         })
-        assert resp.headers['Location'].endswith('/lancamento-diario')
+        assert resp.headers['Location'].endswith('/historico-diario')
     finally:
         _limpar(app)
 
@@ -231,15 +231,19 @@ def test_listagem_filtra_por_data_e_pagina(admin_client, app):
             conn.commit()
             conn.close()
 
-        html = admin_client.get('/lancamento-diario').get_data(as_text=True)
-        assert 'Lançamentos Diários' in html
+        html_form = admin_client.get('/lancamento-diario').get_data(as_text=True)
+        assert 'Lançamento Diário' in html_form
+        assert 'class="linha-diario"' not in html_form
+
+        html = admin_client.get('/historico-diario').get_data(as_text=True)
+        assert 'Histórico Diário' in html
         assert f'{REGISTROS_POR_PAGINA + 8} registro(s) encontrado(s) — página 1 de 2' in html
 
-        html = admin_client.get('/lancamento-diario?filtro_inicio=2026-08-01&filtro_fim=2026-08-31').get_data(as_text=True)
+        html = admin_client.get('/historico-diario?filtro_inicio=2026-08-01&filtro_fim=2026-08-31').get_data(as_text=True)
         assert '3 registro(s) encontrado(s) — página 1 de 1' in html
         assert 'AGOSTO-0' in html and 'SETEMBRO-0' not in html
 
-        html = admin_client.get('/lancamento-diario?filtro_inicio=2026-09-01&page=2').get_data(as_text=True)
+        html = admin_client.get('/historico-diario?filtro_inicio=2026-09-01&page=2').get_data(as_text=True)
         assert 'página 2 de 2' in html
         assert html.count('class="linha-diario"') == 5
     finally:
