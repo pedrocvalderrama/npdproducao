@@ -52,6 +52,14 @@ def test_banco_antigo_sem_versao_recebe_tabelas_novas_com_backup(app):
         servico = conn.execute("SELECT servico FROM producao WHERE num_of = 'PYTEST-MIG-1'").fetchone()[0]
         conn.close()
         assert servico == 'DADO ANTIGO'
+        conn = sqlite3.connect(DB_NAME)
+        try:
+            antigo = conn.execute(
+                "SELECT inicio_prod_robo, fim_prod_robo_4, tempo_prod_robo FROM producao WHERE num_of = 'PYTEST-MIG-1'"
+            ).fetchone()
+            assert antigo == (None, None, 0)
+        finally:
+            conn.close()
 
         novos = set(os.listdir(BACKUP_DIR)) - backups_antes
         assert any(n.startswith('dados_producao_antes_migracao_') for n in novos)

@@ -36,6 +36,8 @@ def test_kpis_mes_fontes_datas_e_exclusao_resmadeira():
         ALTER TABLE producao ADD COLUMN data_robo TEXT;
         ALTER TABLE producao ADD COLUMN robo_alca TEXT;
         ALTER TABLE producao ADD COLUMN refugo_robo REAL;
+        ALTER TABLE producao ADD COLUMN tempo_acerto_s REAL;
+        ALTER TABLE producao ADD COLUMN tempo_acerto_impressora REAL;
         ALTER TABLE producao ADD COLUMN inicio_prod TEXT;
         ALTER TABLE producao ADD COLUMN fim_prod TEXT;
         ALTER TABLE producao ADD COLUMN inicio_prod_2 TEXT;
@@ -45,6 +47,7 @@ def test_kpis_mes_fontes_datas_e_exclusao_resmadeira():
         ALTER TABLE producao ADD COLUMN inicio_prod_impressora_2 TEXT;
         ALTER TABLE producao ADD COLUMN fim_prod_impressora_2 TEXT;
         UPDATE producao SET inicio_prod = '08:00', fim_prod = '10:30',
+            tempo_acerto_s = 1800, tempo_acerto_impressora = 900,
             inicio_prod_2 = '23:00', fim_prod_2 = '01:00',
             inicio_prod_impressora = '09:00', fim_prod_impressora = '12:00',
             inicio_prod_impressora_2 = '13:00', fim_prod_impressora_2 = '14:30';
@@ -55,15 +58,24 @@ def test_kpis_mes_fontes_datas_e_exclusao_resmadeira():
         assert sos['atingimento'] == 75
         assert sos['produtividade'] == 150
         assert sos['horas'] == 9
+        assert sos['horas_acerto'] == 1
+        assert sos['horas_uteis'] == 72
+        assert sos['horas_paradas'] == 62  # 2 dias × 9 × 4 − (1 h acerto + 9 h produção).
         assert sos['refugo'] == pytest.approx(8 / 38 * 100)
         assert impressora['producao'] == 800
         assert impressora['atingimento'] is None
         assert impressora['produtividade'] == 50
         assert impressora['horas'] == 4.5
+        assert impressora['horas_acerto'] == 0.25
+        assert impressora['horas_uteis'] == 9
+        assert impressora['horas_paradas'] == 4.25
         assert impressora['refugo'] == pytest.approx(4 / 14 * 100)
         assert robo['producao'] == 300
         assert robo['produtividade'] == pytest.approx(300 / 9)
         assert robo['horas'] == 9
+        assert robo['horas_acerto'] == 0
+        assert robo['horas_uteis'] == 9
+        assert robo['horas_paradas'] == 0
         assert robo['atingimento'] is None
         assert robo['refugo'] == 0
         conn.executescript('''
@@ -90,6 +102,21 @@ def test_kpis_mes_fontes_datas_e_exclusao_resmadeira():
         assert _calcular_kpis_mensais(conn, 2026, 12)[2]['refugo'] is None
         assert _calcular_kpis_mensais(conn, 2026, 12)[2]['produtividade'] is None
         assert _calcular_kpis_mensais(conn, 2026, 12)[0]['producao'] == 0
+        assert _calcular_kpis_mensais(conn, 2026, 12)[0]['horas_paradas'] == 0
+        conn.executescript('''
+            INSERT INTO lancamento_diario (data, equipamento, quantidade) VALUES
+                ('2026-09-05', 'SOS 2', 100), ('2026-09-05', 'SOS 1', 200),
+                ('2026-09-01', 'IMPRESSORA', 100), ('2026-09-20', 'IMPRESSORA', 0);
+            UPDATE producao SET tempo_acerto_s = NULL WHERE sos = 'SOS 2';
+        ''')
+        sos, impressora, robo = _calcular_kpis_mensais(conn, 2026, 9)
+        assert sos['horas_paradas'] == 62.5
+        assert sos['horas_acerto'] == 0.5
+        assert sos['horas_uteis'] == 72
+        assert impressora['horas_paradas'] == 13.25
+        assert impressora['horas_uteis'] == 18
+        assert robo['horas_uteis'] == 18
+        assert robo['horas_paradas'] == 0
     finally:
         conn.close()
 
@@ -101,5 +128,9 @@ def test_pagina_kpis_filtro_e_formulas(admin_client):
     kpis = html.split('<h3 id="kpis">')[1].split('<h3>Consumo de Papel por Bobina')[0]
     assert 'value="9" selected' in kpis
     assert 'Fórmulas dos KPI' in kpis
+    assert '<th scope="col">Horas Paradas</th>' in kpis
+    assert '<th scope="col">Horas Produzidas</th>' in kpis
+    assert '<th scope="col">Horas de Acerto</th>' in kpis
+    assert '<th scope="col">Horas Úteis</th>' in kpis
     assert 'Eficiência' not in kpis
     assert admin_client.get('/comparativo-mensal?ano=2026&mes_kpi=13').status_code == 200

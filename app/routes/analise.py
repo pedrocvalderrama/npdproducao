@@ -198,6 +198,9 @@ def _calcular_kpis_mensais(conn, ano, mes):
         meta = metas.get(grupo)
         produtividade = refugo = None
         horas = 0
+        horas_acerto = 0
+        horas_disponiveis = 0
+        horas_paradas = 0
         if grupo == 'ROBO':
             dias = conn.execute(
                 'SELECT COUNT(DISTINCT data) FROM lancamento_diario '
@@ -205,6 +208,7 @@ def _calcular_kpis_mensais(conn, ano, mes):
                 (inicio, fim, 'ROBO'),
             ).fetchone()[0]
             horas = dias * 9
+            horas_disponiveis = horas
             produtividade = produzido / horas if horas else None
             refugo_pecas = conn.execute(
                 'SELECT COALESCE(SUM(refugo_robo), 0) FROM producao '
@@ -214,6 +218,13 @@ def _calcular_kpis_mensais(conn, ano, mes):
             total_robo = produzido + refugo_pecas
             refugo = refugo_pecas / total_robo * 100 if total_robo > 0 else None
         if grupo in ('SOS', 'IMPRESSORA'):
+            equipamentos_sql = ','.join('?' for _ in equipamentos)
+            dias_lancamentos = conn.execute(
+                'SELECT COUNT(DISTINCT data) FROM lancamento_diario '
+                f'WHERE data >= ? AND data < ? AND equipamento IN ({equipamentos_sql})',
+                [inicio, fim, *equipamentos],
+            ).fetchone()[0]
+            horas_disponiveis = dias_lancamentos * 9 * (4 if grupo == 'SOS' else 1)
             data_col = 'data' if grupo == 'SOS' else 'data_impressora'
             maquina_col = 'sos' if grupo == 'SOS' else 'impressora'
             maquinas = [m for m in MAQUINAS_SOS if m != 'RESMADEIRA'] if grupo == 'SOS' else ['IMPRESSORA']
@@ -232,16 +243,22 @@ def _calcular_kpis_mensais(conn, ano, mes):
                 else:
                     segundos = sum(calc_tempo_producao_impressora(p) for p in pedidos)
                 horas = segundos / 3600
+                coluna_acerto = 'tempo_acerto_s' if grupo == 'SOS' else 'tempo_acerto_impressora'
+                horas_acerto = df[coluna_acerto].fillna(0).sum() / 3600
                 velocidade = 'velocidade_un_min' if grupo == 'SOS' else 'velocidade_un_min_flexo'
                 produtividade = df[velocidade].mean()
                 calculo_refugo = calc_media_refugo_sos_consolidada if grupo == 'SOS' else calc_media_refugo_flexo_consolidada
                 refugo = calculo_refugo(df)
+            horas_paradas = horas_disponiveis - (horas_acerto + horas)
         linhas.append({
             'setor': 'ROBÔ' if grupo == 'ROBO' else grupo,
             'producao': produzido,
             'atingimento': produzido / meta * 100 if meta and meta > 0 else None,
             'produtividade': produtividade,
             'horas': horas,
+            'horas_acerto': horas_acerto,
+            'horas_uteis': horas_disponiveis,
+            'horas_paradas': horas_paradas,
             'refugo': refugo,
         })
     return linhas

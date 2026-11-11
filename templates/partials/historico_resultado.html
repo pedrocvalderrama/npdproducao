@@ -3,12 +3,13 @@
 {% set header_verde_cols = ['impressora', 'data_impressora', 'operador_impressora', 'quantidade_impressora', 'refugo_acerto_flexo', 'refugo_flexo', 'refugo_pre_impresso', 'refugo_pct_flexo', 'velocidade_un_min_flexo', 'tempo_acerto_impressora', 'tempo_prod_impressora', 'inicio_acerto_impressora', 'fim_acerto_impressora', 'inicio_prod_impressora', 'fim_prod_impressora'] %}
 {% set header_ciano_cols = ['sos', 'data', 'operador', 'quantidade', 'tipo_impressao', 'refugo_acerto_sos', 'refugo_sos', 'refugo_pct', 'velocidade_un_min', 'tempo_acerto_s', 'tempo_prod_s', 'inicio_acerto', 'fim_acerto', 'inicio_prod', 'fim_prod'] %}
 {% set header_laranja_cols = ['perdas_un', 'refugo_producao_total', 'consumo_util', 'consumo_total'] %}
-{% set header_roxo_cols = ['robo_alca', 'data_robo', 'operador_robo', 'quantidade_robo', 'refugo_robo', 'refugo_robo_kg'] %}
+{% set header_roxo_cols = ['robo_alca', 'data_robo', 'operador_robo', 'quantidade_robo', 'refugo_robo', 'refugo_robo_kg', 'velocidade_un_min_robo', 'tempo_prod_robo', 'inicio_prod_robo', 'fim_prod_robo'] %}
 {% set header_neutro_cols = ['data_inspecao', 'quantidade_inspecao_geral', 'refugo_inspecao_final', 'refugo_inspecao_final_kg', 'perdas_geral', 'perdas_geral_kg', 'observacoes', 'inicio_prod_2', 'fim_prod_2', 'eficiencia_pct'] %}
 {% set group_ordem = header_azul_cols %}
+{% set ordem_detalhes = ['numero_pedido', 'tipo', 'qtd_cliches', 'milheiro', 'quantidade_comanda'] %}
 {% set group_impressao = header_verde_cols %}
 {% set group_sos = header_ciano_cols %}
-{% set column_order = ['num_of', 'servico', 'numero_pedido', 'papel', 'formato', 'tipo', 'qtd_cliches', 'milheiro', 'quantidade_comanda', 'impressora', 'data_impressora', 'operador_impressora', 'quantidade_impressora', 'refugo_acerto_flexo', 'refugo_flexo', 'refugo_pre_impresso', 'refugo_pct_flexo', 'velocidade_un_min_flexo', 'tempo_acerto_impressora', 'tempo_prod_impressora', 'inicio_acerto_impressora', 'fim_acerto_impressora', 'inicio_prod_impressora', 'fim_prod_impressora', 'sos', 'data', 'operador', 'quantidade', 'tipo_impressao', 'refugo_acerto_sos', 'refugo_sos', 'refugo_pct', 'velocidade_un_min', 'tempo_acerto_s', 'tempo_prod_s', 'inicio_acerto', 'fim_acerto', 'inicio_prod', 'fim_prod', 'perdas_un', 'refugo_producao_total', 'consumo_util', 'consumo_total', 'robo_alca', 'data_robo', 'operador_robo', 'quantidade_robo', 'refugo_robo', 'refugo_robo_kg', 'data_inspecao', 'quantidade_inspecao_geral', 'refugo_inspecao_final', 'refugo_inspecao_final_kg', 'perdas_geral', 'perdas_geral_kg', 'observacoes', 'inicio_prod_2', 'fim_prod_2', 'eficiencia_pct'] %}
+{% set column_order = ['num_of', 'servico', 'numero_pedido', 'papel', 'formato', 'tipo', 'qtd_cliches', 'milheiro', 'quantidade_comanda', 'impressora', 'data_impressora', 'operador_impressora', 'quantidade_impressora', 'refugo_acerto_flexo', 'refugo_flexo', 'refugo_pre_impresso', 'refugo_pct_flexo', 'velocidade_un_min_flexo', 'tempo_acerto_impressora', 'tempo_prod_impressora', 'inicio_acerto_impressora', 'fim_acerto_impressora', 'inicio_prod_impressora', 'fim_prod_impressora', 'sos', 'data', 'operador', 'quantidade', 'tipo_impressao', 'refugo_acerto_sos', 'refugo_sos', 'refugo_pct', 'velocidade_un_min', 'tempo_acerto_s', 'tempo_prod_s', 'inicio_acerto', 'fim_acerto', 'inicio_prod', 'fim_prod', 'perdas_un', 'refugo_producao_total', 'consumo_util', 'consumo_total', 'robo_alca', 'data_robo', 'operador_robo', 'quantidade_robo', 'refugo_robo', 'refugo_robo_kg', 'velocidade_un_min_robo', 'tempo_prod_robo', 'inicio_prod_robo', 'fim_prod_robo', 'data_inspecao', 'quantidade_inspecao_geral', 'refugo_inspecao_final', 'refugo_inspecao_final_kg', 'perdas_geral', 'perdas_geral_kg', 'observacoes', 'inicio_prod_2', 'fim_prod_2', 'eficiencia_pct'] %}
 {% set sticky_left_cols = ['num_of', 'servico'] %}
 {% set operador_cols = ['operador', 'operador_impressora', 'operador_robo'] %}
 
@@ -32,6 +33,7 @@
           {% if key == 'tempo_prod_s' %}{% set header_title = 'Cálculo: soma dos tempos de produção SOS (dias 1 a 4), em segundos' %}{% endif %}
           {% if key == 'tempo_acerto_impressora' %}{% set header_title = 'Cálculo: Fim Acerto − Início Acerto (Impressora), em segundos' %}{% endif %}
           {% if key == 'tempo_prod_impressora' %}{% set header_title = 'Cálculo: soma dos tempos de produção Impressora (dias 1 a 4), em segundos' %}{% endif %}
+          {% if key == 'velocidade_un_min_robo' %}{% set header_title = 'Cálculo: Quantidade Robô ÷ (Tempo Produção Robô dos quatro dias em minutos)' %}{% endif %}
           {% if key == 'velocidade_un_min' %}{% set header_title = 'Cálculo: Quantidade SOS ÷ (Tempo Produção SOS em minutos)' %}{% endif %}
           {% if key == 'velocidade_un_min_flexo' %}{% set header_title = 'Cálculo: Quantidade Impressora ÷ (Tempo Produção Impressora em minutos)' %}{% endif %}
           {% if key == 'perdas_geral_kg' %}{% set header_title = 'Cálculo: Refugo geral em kg (peso por unidade × refugo geral peças)' %}{% endif %}
@@ -39,10 +41,11 @@
           {% if key in group_ordem %}{% set col_group = 'ordem' %}
           {% elif key in group_impressao %}{% set col_group = 'impressao' %}
           {% elif key in group_sos %}{% set col_group = 'sos' %}
-          {% elif key in header_laranja_cols or key in header_roxo_cols or key in header_neutro_cols %}{% set col_group = 'extra' %}
+          {% elif key in header_roxo_cols %}{% set col_group = 'robo' %}
+          {% elif key in header_laranja_cols or key in header_neutro_cols %}{% set col_group = 'extra' %}
           {% endif %}
           {% set sort_href = url_for('main.historico', sort_by=key, sort_order='desc' if request.args.get('sort_by') == key and request.args.get('sort_order') == 'asc' else 'asc', **preserved_args) %}
-          <th data-column="{{ key }}" data-group="{{ col_group }}" class="{% if key in header_azul_cols %}header-azul {% endif %}{% if key in header_verde_cols %}header-verde {% endif %}{% if key in header_ciano_cols %}header-ciano {% endif %}{% if key in header_laranja_cols %}header-laranja {% endif %}{% if key in header_roxo_cols %}header-roxo {% endif %}{% if key in header_neutro_cols %}header-neutro {% endif %}{% if key in sticky_left_cols %}sticky-left{% endif %}"{% if header_title %} title="{{ header_title }}"{% endif %}><a href="{{ sort_href }}" hx-get="{{ sort_href }}" hx-target="#historico-resultado" hx-push-url="true"{% if header_title %} title="{{ header_title }}"{% endif %}>
+          <th data-column="{{ key }}" data-group="{{ col_group }}" {% if key in ordem_detalhes %}data-ordem-detalhe="true"{% endif %} class="{% if key in header_azul_cols %}header-azul {% endif %}{% if key in header_verde_cols %}header-verde {% endif %}{% if key in header_ciano_cols %}header-ciano {% endif %}{% if key in header_laranja_cols %}header-laranja {% endif %}{% if key in header_roxo_cols %}header-roxo {% endif %}{% if key in header_neutro_cols %}header-neutro {% endif %}{% if key in sticky_left_cols %}sticky-left{% endif %}"{% if header_title %} title="{{ header_title }}"{% endif %}><a href="{{ sort_href }}" hx-get="{{ sort_href }}" hx-target="#historico-resultado" hx-push-url="true"{% if header_title %} title="{{ header_title }}"{% endif %}>
             {% if key == 'numero_pedido' %}Número do Pedido
             {% elif key == 'num_of' %}Nº OF
             {% elif key == 'operador' %}Operador SOS
@@ -66,6 +69,10 @@
             {% elif key == 'inicio_prod_impressora' %}Início Produção Impressora
             {% elif key == 'fim_prod_impressora' %}Fim Produção Impressora
             {% elif key == 'refugo_producao_total' %}Refugo Produção Total (kg)
+            {% elif key == 'velocidade_un_min_robo' %}Velocidade Robô
+            {% elif key == 'tempo_prod_robo' %}Tempo Produção Robô
+            {% elif key.startswith('inicio_prod_robo') %}Início Produção Robô (Dia {{ key[-1] if key[-1] in '234' else '1' }})
+            {% elif key.startswith('fim_prod_robo') %}Fim Produção Robô (Dia {{ key[-1] if key[-1] in '234' else '1' }})
             {% elif key == 'refugo_robo' %}Refugo Robo (peças)
             {% elif key == 'refugo_inspecao_final' %}Refugo Inspeção Final (peças)
             {% elif key == 'refugo_robo_kg' %}Refugo Robô (kg)
@@ -99,8 +106,9 @@
           {% if key in group_ordem %}{% set col_group = 'ordem' %}
           {% elif key in group_impressao %}{% set col_group = 'impressao' %}
           {% elif key in group_sos %}{% set col_group = 'sos' %}
+          {% elif key in header_roxo_cols %}{% set col_group = 'robo' %}
           {% endif %}
-          <td data-group="{{ col_group }}" {% if key in sticky_left_cols %}class="sticky-left" data-column="{{ key }}"{% endif %}>
+          <td data-group="{{ col_group }}" {% if key in ordem_detalhes %}data-ordem-detalhe="true"{% endif %} {% if key in sticky_left_cols %}class="sticky-left" data-column="{{ key }}"{% endif %}>
             {% if key == 'tipo' and lancamento[key] %}
               <span class="badge-tipo">{{ lancamento[key] }}</span>
             {% elif key in operador_cols and lancamento[key] %}
@@ -113,9 +121,9 @@
               {{ "%s/%s/%s"|format(parts[2], parts[1], parts[0]) }}
             {% elif key in ['refugo_pct', 'refugo_pct_flexo', 'eficiencia_pct'] and lancamento[key] is not none %}
               {{ "%.2f"|format(lancamento[key]|float) }}%
-            {% elif key in ['velocidade_un_min', 'velocidade_un_min_flexo', 'perdas_un', 'perdas_geral', 'perdas_geral_kg', 'milheiro', 'refugo_producao_total', 'refugo_flexo', 'refugo_pre_impresso', 'refugo_sos', 'refugo_robo', 'refugo_inspecao_final', 'refugo_robo_kg', 'refugo_inspecao_final_kg', 'refugo_acerto_flexo', 'refugo_acerto_sos', 'consumo_util', 'consumo_total'] and lancamento[key] is not none %}
+            {% elif key in ['velocidade_un_min_robo', 'velocidade_un_min', 'velocidade_un_min_flexo', 'perdas_un', 'perdas_geral', 'perdas_geral_kg', 'milheiro', 'refugo_producao_total', 'refugo_flexo', 'refugo_pre_impresso', 'refugo_sos', 'refugo_robo', 'refugo_inspecao_final', 'refugo_robo_kg', 'refugo_inspecao_final_kg', 'refugo_acerto_flexo', 'refugo_acerto_sos', 'consumo_util', 'consumo_total'] and lancamento[key] is not none %}
               {{ "%.2f"|format(lancamento[key]|float) }}
-            {% elif key in ['tempo_prod_s', 'tempo_acerto_s', 'tempo_prod_impressora', 'tempo_acerto_impressora'] and lancamento[key] is not none %}
+            {% elif key in ['tempo_prod_robo', 'tempo_prod_s', 'tempo_acerto_s', 'tempo_prod_impressora', 'tempo_acerto_impressora'] and lancamento[key] is not none %}
               {% set total_seconds = lancamento[key]|int %}
               {% set hours = (total_seconds // 3600) %}
               {% set minutes = ((total_seconds % 3600) // 60) %}

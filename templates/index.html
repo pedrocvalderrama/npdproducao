@@ -110,17 +110,31 @@
                   </div>
                   <div class="form-group full-width"><label class="form-label" for="observacoes_sos">Observações SOS</label><textarea name="observacoes_sos" id="observacoes_sos" class="form-textarea" rows="2">{{ lancamento.observacoes_sos if lancamento else '' }}</textarea></div>
                   
-                  <!-- Robo e Inspeção -->
-                  <div class="form-section-title full-width"><h3>Robo e Inspeção</h3></div>
+                  <!-- Robô -->
+                  <div class="form-section-title full-width"><h3>Dados Robô</h3></div>
                   <div class="form-group"><label class="form-label" for="robo_alca">Robô Alça</label><select name="robo_alca" id="robo_alca" class="form-select" title="Obrigatório quando Quantidade Robô for maior que zero">{% set robo_alca_options = ['APLA-2R'] %}<option value="">Selecione...</option>{% for robo_opt in robo_alca_options %}<option {% if lancamento and lancamento.robo_alca == robo_opt %}selected{% endif %}>{{ robo_opt }}</option>{% endfor %}</select></div>
                   <div class="form-group"><label class="form-label" for="operador_robo">Operador Robo</label><select name="operador_robo" id="operador_robo" class="form-select"><option value="">Selecione...</option>{% for op in operadores_robo %}<option {% if lancamento and lancamento.operador_robo == op %}selected{% endif %}>{{ op }}</option>{% endfor %}</select></div>
-                  <div class="form-group"><label class="form-label" for="quantidade_inspecao_geral">Quantidade Inspeção Final (un)</label><input name="quantidade_inspecao_geral" id="quantidade_inspecao_geral" type="number" class="form-input" value="{{ lancamento.quantidade_inspecao_geral if lancamento else '' }}"></div>
                   <div class="form-group"><label class="form-label" for="quantidade_robo">Quantidade Robô (un)</label><input name="quantidade_robo" id="quantidade_robo" type="number" class="form-input" value="{{ lancamento.quantidade_robo if lancamento else '' }}"></div>
-                  <div class="form-group"><label class="form-label" for="data_inspecao">Data Inspeção</label><input type="date" name="data_inspecao" id="data_inspecao" class="form-input" value="{{ lancamento.data_inspecao if lancamento else '' }}"></div>
                   <div class="form-group"><label class="form-label" for="data_robo">Data Robô</label><input type="date" name="data_robo" id="data_robo" class="form-input" value="{{ lancamento.data_robo if lancamento else '' }}"></div>
                   <div class="form-group"><label class="form-label" for="refugo_robo">Refugo Robo (peças)</label><input name="refugo_robo" id="refugo_robo" type="number" step="0.01" class="form-input" value="{{ lancamento.refugo_robo if lancamento else '' }}"></div>
+                  {% for dia in range(1, 5) %}
+                  {% set sufixo = '' if dia == 1 else '_' ~ dia %}
+                  {% if dia > 1 %}
+                  <div class="full-width checkbox-group">
+                    <input type="checkbox" id="add_robo_day_{{ dia }}" name="add_robo_day_{{ dia }}"><label for="add_robo_day_{{ dia }}">Adicionar {{ dia }}º dia de produção Robô?</label>
+                  </div>
+                  <div id="robo_day_{{ dia }}_fields" class="full-width form-grid" style="display: none; margin-top: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+                  {% endif %}
+                  <div class="form-group"><label class="form-label" for="inicio_prod_robo{{ sufixo }}">Início Produção Robô (Dia {{ dia }})</label><input name="inicio_prod_robo{{ sufixo }}" id="inicio_prod_robo{{ sufixo }}" type="time" class="form-input" value="{{ lancamento['inicio_prod_robo' ~ sufixo] or '' if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="fim_prod_robo{{ sufixo }}">Fim Produção Robô (Dia {{ dia }})</label><input name="fim_prod_robo{{ sufixo }}" id="fim_prod_robo{{ sufixo }}" type="time" class="form-input" value="{{ lancamento['fim_prod_robo' ~ sufixo] or '' if lancamento else '' }}"></div>
+                  {% if dia > 1 %}</div>{% endif %}
+                  {% endfor %}
+                  <div class="form-group full-width"><label class="form-label" for="observacoes_robo">Observações Robô</label><textarea name="observacoes_robo" id="observacoes_robo" class="form-textarea" rows="2">{{ lancamento.observacoes_robo if lancamento else '' }}</textarea></div>
+                  <!-- Inspeção -->
+                  <div class="form-section-title full-width"><h3>Dados Inspeção</h3></div>
+                  <div class="form-group"><label class="form-label" for="quantidade_inspecao_geral">Quantidade Inspeção Final (un)</label><input name="quantidade_inspecao_geral" id="quantidade_inspecao_geral" type="number" class="form-input" value="{{ lancamento.quantidade_inspecao_geral if lancamento else '' }}"></div>
+                  <div class="form-group"><label class="form-label" for="data_inspecao">Data Inspeção</label><input type="date" name="data_inspecao" id="data_inspecao" class="form-input" value="{{ lancamento.data_inspecao if lancamento else '' }}"></div>
                   <div class="form-group"><label class="form-label" for="refugo_inspecao_final">Refugo Inspeção Final (peças)</label><input name="refugo_inspecao_final" id="refugo_inspecao_final" type="number" step="0.01" class="form-input" value="{{ lancamento.refugo_inspecao_final if lancamento else '' }}"></div>
-                  <div class="form-group full-width"><label class="form-label" for="observacoes_robo">Observações Robô e Inspeção</label><textarea name="observacoes_robo" id="observacoes_robo" class="form-textarea" rows="2">{{ lancamento.observacoes_robo if lancamento else '' }}</textarea></div>
                   <!-- Campos hidden para valores calculados -->
                   <input type="hidden" name="refugo_pct" id="refugo_pct" value="{{ lancamento.refugo_pct if lancamento else '' }}">
                   <input type="hidden" name="refugo_pct_flexo" id="refugo_pct_flexo" value="{{ lancamento.refugo_pct_flexo if lancamento else '' }}">
@@ -268,11 +282,17 @@
                         { checkbox: 'add_fourth_day', fields: 'fourth_day_fields', inicio: 'inicio_prod_4', fim: 'fim_prod_4' },
                         { checkbox: 'add_impressora_second_day', fields: 'impressora_second_day_fields', inicio: 'inicio_prod_impressora_2', fim: 'fim_prod_impressora_2' },
                         { checkbox: 'add_impressora_third_day', fields: 'impressora_third_day_fields', inicio: 'inicio_prod_impressora_3', fim: 'fim_prod_impressora_3' },
-                        { checkbox: 'add_impressora_fourth_day', fields: 'impressora_fourth_day_fields', inicio: 'inicio_prod_impressora_4', fim: 'fim_prod_impressora_4' }
+                        { checkbox: 'add_impressora_fourth_day', fields: 'impressora_fourth_day_fields', inicio: 'inicio_prod_impressora_4', fim: 'fim_prod_impressora_4' },
+                        { checkbox: 'add_robo_day_2', fields: 'robo_day_2_fields', inicio: 'inicio_prod_robo_2', fim: 'fim_prod_robo_2' },
+                        { checkbox: 'add_robo_day_3', fields: 'robo_day_3_fields', inicio: 'inicio_prod_robo_3', fim: 'fim_prod_robo_3' },
+                        { checkbox: 'add_robo_day_4', fields: 'robo_day_4_fields', inicio: 'inicio_prod_robo_4', fim: 'fim_prod_robo_4' }
                     ].forEach(function(dia) {
                         if (data[dia.inicio] || data[dia.fim]) {
                             document.getElementById(dia.checkbox).checked = true;
                             document.getElementById(dia.fields).style.display = 'grid';
+                        } else if (dia.checkbox.startsWith('add_robo_day_')) {
+                            document.getElementById(dia.checkbox).checked = false;
+                            document.getElementById(dia.fields).style.display = 'none';
                         }
                     });
                     

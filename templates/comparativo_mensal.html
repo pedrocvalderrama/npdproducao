@@ -173,7 +173,10 @@
               <th scope="col">Produção Realizada</th>
               <th scope="col">Atingimento de Meta</th>
               <th scope="col">Produtividade</th>
-              <th scope="col">Horas</th>
+              <th scope="col">Horas Produzidas</th>
+              <th scope="col">Horas de Acerto</th>
+              <th scope="col">Horas Úteis</th>
+              <th scope="col">Horas Paradas</th>
               <th scope="col">Refugo</th>
             </tr>
           </thead>
@@ -185,6 +188,9 @@
               <td>{{ ("%.2f"|format(r.atingimento)|replace('.', ',')) ~ '%' if r.atingimento is not none else '—' }}</td>
               <td>{{ ("%.2f"|format(r.produtividade)|replace('.', ',')) ~ (' sacolas/h' if r.setor == 'ROBÔ' else ' sacos/min') if r.produtividade is not none and r.produtividade == r.produtividade else '—' }}</td>
               <td>{{ "%.2f"|format(r.horas)|replace('.', ',') }} h</td>
+              <td>{{ "%.2f"|format(r.horas_acerto)|replace('.', ',') }} h</td>
+              <td>{{ "%.2f"|format(r.horas_uteis)|replace('.', ',') }} h</td>
+              <td>{{ "%.2f"|format(r.horas_paradas)|replace('.', ',') }} h</td>
               <td>{{ ("%.2f"|format(r.refugo)|replace('.', ',')) ~ '%' if r.refugo is not none and r.refugo == r.refugo else '—' }}</td>
             </tr>
             {% endfor %}
@@ -193,7 +199,12 @@
         <details style="margin-top: 15px;">
           <summary>Fórmulas dos KPI's</summary>
           <ul>
-            <li><strong>Horas:</strong> soma dos tempos de produção dos pedidos do mês, em horas decimais, pela Data SOS ou Data Impressora. Soma os quatro períodos de produção e considera viradas de dia. SOS exclui a resmadeira. Para Robô, número de datas distintas com Quantidade maior que zero no Histórico Diário × 9 horas, como na produtividade.</li>
+            <li><strong>Horas Paradas SOS:</strong> (dias com lançamentos × 9 × 4) − (soma do Tempo Acerto SOS + soma do Tempo Produção SOS do mês). Exclui a resmadeira.</li>
+            <li><strong>Horas Paradas Impressora:</strong> (dias com lançamentos × 9) − (soma do Tempo Acerto Impressora + soma do Tempo Produção Impressora do mês).</li>
+            <li>Para Horas Paradas, cada data do Histórico Diário conta uma única vez por setor, mesmo com várias máquinas ou lançamentos no dia, incluindo lançamentos com quantidade zero. Acerto e produção usam os pedidos pela Data SOS ou Data Impressora do mês e ano selecionados, convertidos em horas. Robô fica em zero.</li>
+            <li><strong>Horas Produzidas:</strong> soma dos tempos de produção dos pedidos do mês, em horas decimais, pela Data SOS ou Data Impressora. Soma os quatro períodos de produção e considera viradas de dia. SOS exclui a resmadeira. Para Robô, número de datas distintas com Quantidade maior que zero no Histórico Diário × 9 horas, como na produtividade.</li>
+            <li><strong>Horas de Acerto:</strong> soma do Tempo Acerto SOS ou Tempo Acerto Impressora dos pedidos do mês, convertida em horas. SOS exclui a resmadeira. Robô fica em zero.</li>
+            <li><strong>Horas Úteis:</strong> dias distintos com lançamentos no Histórico Diário do setor × 9 × 4 para SOS; dias distintos × 9 para Impressora. São as horas disponíveis usadas no cálculo de Horas Paradas. Para Robô, dias distintos com Quantidade maior que zero × 9.</li>
             <li><strong>Produção Realizada:</strong> soma da Quantidade do Histórico Diário no mês e ano selecionados, por setor. SOS soma SOS 1 a SOS 4; Robô considera a quantidade de sacolas.</li>
             <li><strong>Atingimento de Meta:</strong> Produção Realizada ÷ meta do setor cadastrada em Display Diário → Meta do Mês × 100. Sem meta positiva, mostra “—”.</li>
             <li><strong>Produtividade (sacos/min):</strong> média aritmética das velocidades registradas na Análise: velocidade_un_min para SOS e velocidade_un_min_flexo para Impressora. Valores nulos são ignorados.</li>

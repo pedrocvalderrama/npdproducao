@@ -18,6 +18,11 @@ document.addEventListener('DOMContentLoaded', () => {
         3:{checkbox:'add_impressora_third_day',fields:'impressora_third_day_fields',inicio:'inicio_prod_impressora_3',fim:'fim_prod_impressora_3'},
         4:{checkbox:'add_impressora_fourth_day',fields:'impressora_fourth_day_fields',inicio:'inicio_prod_impressora_4',fim:'fim_prod_impressora_4'}
     };
+    const ROBO_EXTRA_DAYS={
+        2:{checkbox:'add_robo_day_2',fields:'robo_day_2_fields',inicio:'inicio_prod_robo_2',fim:'fim_prod_robo_2'},
+        3:{checkbox:'add_robo_day_3',fields:'robo_day_3_fields',inicio:'inicio_prod_robo_3',fim:'fim_prod_robo_3'},
+        4:{checkbox:'add_robo_day_4',fields:'robo_day_4_fields',inicio:'inicio_prod_robo_4',fim:'fim_prod_robo_4'}
+    };
     function getExtraDayProdSeconds(extraDaysConfig,dayNum){
         const d=extraDaysConfig[dayNum];
         if(!document.getElementById(d.checkbox).checked)return 0;
@@ -35,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function showExtraDaysIfFilled(extraDaysConfig){
         [2,3,4].forEach(dayNum=>{
             const d=extraDaysConfig[dayNum];
-            if(document.querySelector(`[name=${d.inicio}]`).value){
+            if(document.querySelector(`[name=${d.inicio}]`).value || document.querySelector(`[name=${d.fim}]`).value){
                 document.getElementById(d.checkbox).checked=true;
                 document.getElementById(d.fields).style.display='grid';
             }
@@ -211,6 +216,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     setupExtraDayToggles(SOS_EXTRA_DAYS);
     setupExtraDayToggles(IMPRESSORA_EXTRA_DAYS);
+    [2,3,4].forEach(dayNum=>{
+        const d=ROBO_EXTRA_DAYS[dayNum];
+        document.getElementById(d.checkbox).addEventListener('change',function(){
+            document.getElementById(d.fields).style.display=this.checked?'grid':'none';
+            if(!this.checked){
+                document.getElementById(d.inicio).value='';
+                document.getElementById(d.fim).value='';
+            }
+        });
+    });
+    showExtraDaysIfFilled(ROBO_EXTRA_DAYS);
     if(!document.getElementById('data').value){document.getElementById('data').value="{{ lancamento.data if lancamento else '' }}"||new Date().toISOString().split('T')[0];}
     showExtraDaysIfFilled(SOS_EXTRA_DAYS);
     showExtraDaysIfFilled(IMPRESSORA_EXTRA_DAYS);

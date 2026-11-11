@@ -49,6 +49,22 @@ PROD_IMPRESSORA_DIA_KEYS = [
     ('inicio_prod_impressora_4', 'fim_prod_impressora_4'),
 ]
 
+PROD_ROBO_DIA_KEYS = [
+    ('inicio_prod_robo', 'fim_prod_robo'),
+    ('inicio_prod_robo_2', 'fim_prod_robo_2'),
+    ('inicio_prod_robo_3', 'fim_prod_robo_3'),
+    ('inicio_prod_robo_4', 'fim_prod_robo_4'),
+]
+
+
+def calc_tempo_producao_robo(form_data):
+    """Tempo em segundos dos quatro períodos, incluindo viradas de dia."""
+    return sum(
+        calc_tempo_producao_segmento(form_data.get(inicio), form_data.get(fim))
+        for inicio, fim in PROD_ROBO_DIA_KEYS
+    )
+
+
 def parse_observacoes(text):
     """Separa observações unificadas nos campos Impressora, SOS e Robô."""
     result = {'impressora': '', 'sos': '', 'robo': ''}
@@ -201,4 +217,4 @@ def calcular_metricas_producao(form_data):
         print(f"Erro ao calcular métricas: {e}")
         print(traceback.format_exc())
         # Retorna valores padrão em caso de erro
-        return {"refugo_pct": 0, "refugo_pct_flexo": 0, "eficiencia_pct": 0, "velocidade_un_min": 0, "velocidade_un_min_flexo": 0, "perdas_un": 0, "perdas_total_kg": 0, "refugo_robo_kg": 0, "refugo_inspecao_final_kg": 0, "tempo_prod_s": 0, "tempo_acerto_s": 0} 
+        return {"refugo_pct": 0, "refugo_pct_flexo": 0, "eficiencia_pct": 0, "velocidade_un_min": 0, "velocidade_un_min_flexo": 0, "perdas_un": 0, "perdas_total_kg": 0, "refugo_robo_kg": 0, "refugo_inspecao_final_kg": 0, "tempo_prod_s": 0, "tempo_acerto_s": 0}

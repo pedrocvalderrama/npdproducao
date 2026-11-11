@@ -13,7 +13,12 @@ from . import main_bp
 @main_bp.route("/historico")
 def historico():
     conn = get_db_connection()
-    query = "SELECT * FROM producao WHERE 1=1"
+    selecao = (
+        "SELECT *, CASE WHEN tempo_prod_robo > 0 "
+        "THEN COALESCE(quantidade_robo, 0) * 60.0 / tempo_prod_robo "
+        "ELSE 0 END AS velocidade_un_min_robo FROM producao"
+    )
+    query = selecao + " WHERE 1=1"
     params = []
     args = request.args.copy()
     # Filtros por operador
@@ -70,6 +75,7 @@ def historico():
         'refugo_robo', 'refugo_inspecao_final', 'refugo_robo_kg', 'refugo_inspecao_final_kg', 'refugo_acerto_flexo', 'refugo_acerto_sos', 'refugo_pct', 'refugo_pct_flexo', 'eficiencia_pct', 'velocidade_un_min', 'velocidade_un_min_flexo', 
         'refugo_producao_total', 'consumo_util', 'consumo_total', 'perdas_un', 'perdas_geral', 'perdas_geral_kg', 'tempo_prod_s', 'tempo_acerto_s', 'tempo_prod_impressora', 'tempo_acerto_impressora', 'inicio_acerto', 'fim_acerto', 'inicio_acerto_impressora', 'fim_acerto_impressora', 'inicio_prod', 'fim_prod', 'inicio_prod_impressora', 'fim_prod_impressora', 'operador_impressora', 'numero_pedido'
     ]
+    allowed_sort_columns.extend(['velocidade_un_min_robo', 'tempo_prod_robo', 'inicio_prod_robo', 'fim_prod_robo'])
     if sort_by not in allowed_sort_columns: sort_by = 'id'
     if sort_order not in ['asc', 'desc']: sort_order = 'desc'
     # Guarda a query com filtros (sem ORDER BY/LIMIT) para gerar a contagem total
@@ -87,7 +93,7 @@ def historico():
         total_registros = len(lancamentos)
         total_paginas = 1
     else:
-        count_query = query_where.replace("SELECT * FROM producao", "SELECT COUNT(*) AS total FROM producao", 1)
+        count_query = query_where.replace(selecao, "SELECT COUNT(*) AS total FROM producao", 1)
         total_registros = conn.execute(count_query, tuple(params)).fetchone()['total']
         total_paginas = max(1, (total_registros + PER_PAGE - 1) // PER_PAGE)
         try:
@@ -120,7 +126,7 @@ def historico():
     if args.get("export") == "excel":
         if lancamentos:
             # Definir a mesma ordem de colunas da tabela do histÃ³rico (conforme ordem colunas.xlsx)
-            column_order = ['num_of', 'servico', 'numero_pedido', 'papel', 'formato', 'tipo', 'qtd_cliches', 'milheiro', 'quantidade_comanda', 'impressora', 'data_impressora', 'operador_impressora', 'quantidade_impressora', 'refugo_acerto_flexo', 'refugo_flexo', 'refugo_pre_impresso', 'refugo_pct_flexo', 'velocidade_un_min_flexo', 'tempo_acerto_impressora', 'tempo_prod_impressora', 'inicio_acerto_impressora', 'fim_acerto_impressora', 'inicio_prod_impressora', 'fim_prod_impressora', 'sos', 'data', 'operador', 'quantidade', 'tipo_impressao', 'refugo_acerto_sos', 'refugo_sos', 'refugo_pct', 'velocidade_un_min', 'tempo_acerto_s', 'tempo_prod_s', 'inicio_acerto', 'fim_acerto', 'inicio_prod', 'fim_prod', 'perdas_un', 'refugo_producao_total', 'consumo_util', 'consumo_total', 'robo_alca', 'data_robo', 'operador_robo', 'quantidade_robo', 'refugo_robo', 'refugo_robo_kg', 'data_inspecao', 'quantidade_inspecao_geral', 'refugo_inspecao_final', 'refugo_inspecao_final_kg', 'perdas_geral', 'perdas_geral_kg', 'observacoes', 'inicio_prod_2', 'fim_prod_2', 'eficiencia_pct']
+            column_order = ['num_of', 'servico', 'numero_pedido', 'papel', 'formato', 'tipo', 'qtd_cliches', 'milheiro', 'quantidade_comanda', 'impressora', 'data_impressora', 'operador_impressora', 'quantidade_impressora', 'refugo_acerto_flexo', 'refugo_flexo', 'refugo_pre_impresso', 'refugo_pct_flexo', 'velocidade_un_min_flexo', 'tempo_acerto_impressora', 'tempo_prod_impressora', 'inicio_acerto_impressora', 'fim_acerto_impressora', 'inicio_prod_impressora', 'fim_prod_impressora', 'sos', 'data', 'operador', 'quantidade', 'tipo_impressao', 'refugo_acerto_sos', 'refugo_sos', 'refugo_pct', 'velocidade_un_min', 'tempo_acerto_s', 'tempo_prod_s', 'inicio_acerto', 'fim_acerto', 'inicio_prod', 'fim_prod', 'perdas_un', 'refugo_producao_total', 'consumo_util', 'consumo_total', 'robo_alca', 'data_robo', 'operador_robo', 'quantidade_robo', 'refugo_robo', 'refugo_robo_kg', 'velocidade_un_min_robo', 'tempo_prod_robo', 'inicio_prod_robo', 'fim_prod_robo', 'data_inspecao', 'quantidade_inspecao_geral', 'refugo_inspecao_final', 'refugo_inspecao_final_kg', 'perdas_geral', 'perdas_geral_kg', 'observacoes', 'inicio_prod_2', 'fim_prod_2', 'eficiencia_pct']
             
             # Criar DataFrame com dados ordenados
             df_data = []
@@ -208,6 +214,7 @@ def historico():
                 'observacoes': 'ObservaÃ§Ãµes'
             }
             
+            column_names.update({'velocidade_un_min_robo': 'Velocidade Robô', 'tempo_prod_robo': 'Tempo Produção Robô', 'inicio_prod_robo': 'Início Produção Robô (Dia 1)', 'fim_prod_robo': 'Fim Produção Robô (Dia 1)', 'inicio_prod_robo_2': 'Início Produção Robô (Dia 2)', 'fim_prod_robo_2': 'Fim Produção Robô (Dia 2)', 'inicio_prod_robo_3': 'Início Produção Robô (Dia 3)', 'fim_prod_robo_3': 'Fim Produção Robô (Dia 3)', 'inicio_prod_robo_4': 'Início Produção Robô (Dia 4)', 'fim_prod_robo_4': 'Fim Produção Robô (Dia 4)'})
             df = df.rename(columns=column_names)
 
             # Converter Data para datetime (Excel aplicarÃ¡ a localidade ao exibir)
@@ -216,7 +223,7 @@ def historico():
                     df[col] = pd.to_datetime(df[col], errors='coerce')
 
             # Manter percentuais e numÃ©ricos como valores numÃ©ricos; Excel exibirÃ¡ com vÃ­rgula baseado na localidade
-            numeric_cols = ['Quantidade Comanda', 'Quantidade SOS', 'Quantidade Impressora', 'Quantidade InspeÃ§Ã£o Final', 'Quantidade RobÃ´', 'Qtd. ClichÃªs', 'Peso Milheiro', 'Refugo Flexo', 'Refugo PrÃ©-Impresso', 'Refugo SOS', 'Refugo Robo (peÃ§as)', 'Refugo InspeÃ§Ã£o Final (peÃ§as)', 'Refugo RobÃ´ (kg)', 'Refugo InspeÃ§Ã£o Final (kg)', 'Refugo Acerto Flexo', 'Refugo Acerto SOS', 'Refugo ProduÃ§Ã£o Total (kg)', 'Consumo Util', 'Consumo Total', 'Refugo ProduÃ§Ã£o (PeÃ§as)', 'Refugo Geral PeÃ§as', 'Refugo Geral (kg)', 'Velocidade SOS', 'Velocidade Impressora']
+            numeric_cols = ['Quantidade Comanda', 'Quantidade SOS', 'Quantidade Impressora', 'Quantidade InspeÃ§Ã£o Final', 'Quantidade RobÃ´', 'Qtd. ClichÃªs', 'Peso Milheiro', 'Refugo Flexo', 'Refugo PrÃ©-Impresso', 'Refugo SOS', 'Refugo Robo (peÃ§as)', 'Refugo InspeÃ§Ã£o Final (peÃ§as)', 'Refugo RobÃ´ (kg)', 'Refugo InspeÃ§Ã£o Final (kg)', 'Refugo Acerto Flexo', 'Refugo Acerto SOS', 'Refugo ProduÃ§Ã£o Total (kg)', 'Consumo Util', 'Consumo Total', 'Refugo ProduÃ§Ã£o (PeÃ§as)', 'Refugo Geral PeÃ§as', 'Refugo Geral (kg)', 'Velocidade SOS', 'Velocidade Impressora', 'Velocidade Robô']
             for col in numeric_cols:
                 if col in df.columns:
                     df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -227,7 +234,7 @@ def historico():
                     df[col] = pd.to_numeric(df[col], errors='coerce') / 100.0
 
             # Converter tempo (segundos) para fraÃ§Ã£o de dia (Excel) como nÃºmero
-            for col in ['Tempo Acerto SOS', 'Tempo ProduÃ§Ã£o SOS', 'Tempo Acerto Impressora', 'Tempo ProduÃ§Ã£o Impressora']:
+            for col in ['Tempo Produção Robô', 'Tempo Acerto SOS', 'Tempo ProduÃ§Ã£o SOS', 'Tempo Acerto Impressora', 'Tempo ProduÃ§Ã£o Impressora']:
                 if col in df.columns:
                     df[col] = df[col].apply(lambda x: (float(x) / 86400.0) if pd.notna(x) and x != '' and float(x) > 0 else pd.NA)
             
@@ -325,7 +332,7 @@ def historico():
                             ws.set_column(i, i, width, fmt_percent)
                         elif col in numeric_cols:
                             ws.set_column(i, i, width, fmt_number)
-                        elif col in ['Tempo Acerto SOS', 'Tempo ProduÃ§Ã£o SOS', 'Tempo Acerto Impressora', 'Tempo ProduÃ§Ã£o Impressora']:
+                        elif col in ['Tempo Produção Robô', 'Tempo Acerto SOS', 'Tempo ProduÃ§Ã£o SOS', 'Tempo Acerto Impressora', 'Tempo ProduÃ§Ã£o Impressora']:
                             ws.set_column(i, i, width, fmt_time)
                         elif col in ['Data SOS', 'Data Impressora', 'Data InspeÃ§Ã£o', 'Data RobÃ´']:
                             ws.set_column(i, i, width, fmt_date)

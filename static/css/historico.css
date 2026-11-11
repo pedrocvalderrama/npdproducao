@@ -234,9 +234,17 @@
 }
 
 /* Visões: esconde grupos de colunas (ações sempre visíveis) */
+.hist-page:is([data-view="impressao"], [data-view="sos"], [data-view="robo"]) .tabela [data-ordem-detalhe] {
+  display: none !important;
+}
+
 .hist-page[data-view="ordem"] .tabela [data-group]:not([data-group="ordem"]) { display: none !important; }
 
 .hist-page[data-view="impressao"] .tabela [data-group]:not([data-group="ordem"]):not([data-group="impressao"]) {
+  display: none !important;
+}
+
+.hist-page[data-view="robo"] .tabela [data-group]:not([data-group="ordem"]):not([data-group="robo"]) {
   display: none !important;
 }
 

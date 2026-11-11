@@ -9,6 +9,8 @@ só precisa ser feita em um lugar.
 """
 from ..business import (
     calc_tempo_producao_impressora,
+    calc_tempo_producao_robo,
+    PROD_ROBO_DIA_KEYS,
     calcular_metricas_producao,
     get_seconds_from_time,
     observacoes_from_form,
@@ -136,6 +138,8 @@ def montar_campos_producao(form):
         "tempo_prod_s": metricas["tempo_prod_s"],
         "tempo_acerto_s": metricas["tempo_acerto_s"],
         "tempo_prod_impressora": tempo_prod_impressora,
+        "tempo_prod_robo": calc_tempo_producao_robo(form),
+        **{col: safe_get_str(form, col) for par in PROD_ROBO_DIA_KEYS for col in par},
         "tempo_acerto_impressora": tempo_acerto_impressora,
         "numero_pedido": numero_pedido,
     }
