@@ -36,6 +36,9 @@
 {% endblock %}
 
 {% block content %}
+{% macro numero_decimal(valor) -%}
+{{ '{:,.6f}'.format(valor).rstrip('0').rstrip('.').replace(',', 'X').replace('.', ',').replace('X', '.') if valor is not none else '—' }}
+{%- endmacro %}
 <div class="card" id="lancamentos">
   <h1>Histórico Diário</h1>
   <p class="diario-intro">Consulta e edição dos lançamentos diários por equipamento.</p>
@@ -58,6 +61,7 @@
         <th>Qtd. Alças</th>
         <th>Meta Diária</th>
         <th>Refugo Diário</th>
+        <th>Peso Diário (kg)</th>
         <th>Problemas</th>
         <th>Soluções</th>
         <th>Observação</th>
@@ -89,8 +93,24 @@
           <input class="campo-edicao form-input" type="number" min="0" step="1" name="meta_diaria" form="{{ f }}" value="{{ r.meta_diaria if r.meta_diaria is not none else '' }}">
         </td>
         <td class="num">
-          <span class="valor">{{ '{:,}'.format(r.refugo_diario).replace(',', '.') if r.refugo_diario is not none else '—' }}</span>
+          <span class="valor">{{ numero_decimal(r.refugo_diario) }}</span>
+          {% if r.equipamento in ['SOS 1', 'SOS 2', 'SOS 3', 'SOS 4'] %}
+          {% for campo, rotulo in [('refugo_impressora', 'Refugo Impressora'), ('refugo_sos', 'Refugo SOS')] %}
+          <label class="campo-edicao" for="{{ campo }}-{{ r.id }}">{{ rotulo }}</label>
+          <input class="campo-edicao form-input" type="number" min="0" step="1" id="{{ campo }}-{{ r.id }}" name="{{ campo }}" form="{{ f }}" value="{{ r[campo] if r[campo] is not none else '' }}">
+          {% endfor %}
+          {% if r.refugo_impressora is none and r.refugo_sos is none and r.refugo_diario is not none %}
+          <small class="campo-edicao">Total antigo: {{ r.refugo_diario }} (sem divisão). Preencha os novos campos para substituir o total.</small>
+          {% endif %}
+          {% else %}
           <input class="campo-edicao form-input" type="number" min="0" step="1" name="refugo_diario" form="{{ f }}" value="{{ r.refugo_diario if r.refugo_diario is not none else '' }}">
+          {% endif %}
+        </td>
+        <td>
+          <span class="valor">{{ r.peso_diario|string|replace('.', ',') if r.peso_diario is not none else '—' }}</span>
+          {% if r.equipamento in ['SOS 1', 'SOS 2', 'SOS 3', 'SOS 4'] %}
+          <input class="campo-edicao form-input" type="text" inputmode="decimal" name="peso_diario" form="{{ f }}" aria-label="Peso Diário (kg)" value="{{ r.peso_diario|string|replace('.', ',') if r.peso_diario is not none else '' }}">
+          {% endif %}
         </td>
         <td>
           <span class="valor">{{ r.problemas or '' }}</span>
@@ -111,7 +131,11 @@
             <input type="hidden" name="voltar_para" value="{{ voltar_para }}">
           </form>
           <div class="acoes-visualizar">
+            {% if r.tem_producoes %}
+            <a class="btn-pequeno btn-amarelo" href="{{ url_for('main.editar_lancamento_diario', id=r.id) }}">Editar produções</a>
+            {% else %}
             <button type="button" class="btn-pequeno btn-amarelo" onclick="editarLinha({{ r.id }})">Editar</button>
+            {% endif %}
             <form action="{{ url_for('main.excluir_lancamento_diario', id=r.id) }}" method="post" onsubmit="return confirm('Excluir este lançamento diário?');">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="voltar_para" value="{{ voltar_para }}">
@@ -125,7 +149,7 @@
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="11" style="text-align:center; padding: 20px;">Nenhum lançamento diário encontrado.</td></tr>
+      <tr><td colspan="12" style="text-align:center; padding: 20px;">Nenhum lançamento diário encontrado.</td></tr>
       {% endfor %}
     </tbody>
   </table>

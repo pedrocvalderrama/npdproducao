@@ -1,0 +1,102 @@
+.sos-quadro { background: #eef3f9; color: #162b46; padding: 22px; border: 1px solid #d8e3ef; border-radius: 16px; }
+.sos-quadro-cabecalho { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.sos-sobrelinha { font-size: 11px; font-weight: 800; letter-spacing: .14em; color: #526783; }
+.sos-quadro h3 { font-size: 30px; margin: 4px 0; color: #162b46; }
+.sos-quadro-cabecalho p { margin: 4px 0; font-size: 14px; }
+.sos-legenda { display: flex; flex-wrap: wrap; gap: 8px 22px; padding: 12px 0 16px; font-size: 12px; color: #526783; }
+.sos-legenda i { display: inline-block; width: 9px; height: 9px; background: #2367c9; border-radius: 50%; margin-right: 4px; }
+.sos-legenda i.verde { background: #138159; }
+.sos-legenda i.vermelho { background: #bb2525; }
+.sos-quadro-acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; }
+.sos-meta-refugo-form { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.sos-meta-refugo-form label { font-weight: 700; }
+.sos-meta-refugo-campos { display: flex; gap: 6px; }
+.sos-meta-refugo-campos input { box-sizing: border-box; width: 90px; padding: 8px; border: 1px solid #a5b8cf; border-radius: 6px; font: inherit; }
+.sos-meta-refugo-form small { color: #526783; font-size: 11px; }
+.sos-semana-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+.sos-dia { background: #dde6f1; border-radius: 12px; padding: 0 7px 7px; display: flex; flex-direction: column; gap: 7px; min-width: 0; border: 2px solid transparent; }
+.sos-dia.dia-hoje { border-color: #118579; box-shadow: 0 0 0 3px #1185791c; }
+.sos-dia-cabecalho { background: #203e64; color: white; border-radius: 9px 9px 0 0; padding: 12px 10px; margin: -2px -9px 0; }
+.dia-hoje .sos-dia-cabecalho { background: #087c73; }
+.sos-dia-cabecalho > div { display: flex; justify-content: space-between; align-items: baseline; gap: 5px; }
+.sos-dia-cabecalho strong { font-size: clamp(15px, 1.3vw, 24px); }
+.sos-dia-cabecalho span { font-size: clamp(13px, 1vw, 20px); }
+.sos-dia-cabecalho small { display: block; font-size: 9px; letter-spacing: .12em; margin-top: 5px; opacity: .85; }
+.sos-dia-resumo { display: flex; flex-direction: column; gap: 4px; padding: 3px 4px; font-size: 11px; }
+.sos-dia-resumo span { display: flex; justify-content: space-between; }
+.sos-maquina { --sos-cor: #2367c9; background: #fff; border: 1px solid #d0ddec; border-radius: 9px; flex: 1; min-width: 0; overflow: hidden; font-variant-numeric: tabular-nums; }
+.sos-maquina.meta-ok { --sos-cor: #08704a; border-color: #b4d9c5; }
+.sos-maquina.producao-vermelho { --sos-cor: #bb2525; }
+.sos-maquina.sem-dados { --sos-cor: #60738a; background: #f5f8fc; }
+.sos-maquina-topo { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 9px 10px; background: #edf3fc; border-bottom: 1px solid #dce6f2; }
+.sos-maquina-topo > strong { font-size: 17px; font-weight: 800; white-space: nowrap; }
+.meta-ok .sos-maquina-topo { background: #e9f6ee; }
+.sos-status { padding: 4px 6px; border-radius: 4px; color: #365c8b; background: #dbe8fb; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; }
+.meta-ok .sos-status { background: #08704a; color: #fff; }
+.sem-dados .sos-status { background: #e6ebf2; color: #60738a; }
+.sos-rotulo { display: block; font-size: 11px; font-weight: 600; color: #526783; }
+.sos-producao { padding: 9px 10px 7px; }
+.sos-producao-valores { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin-top: 4px; white-space: nowrap; }
+.sos-realizado-meta { font-size: clamp(12px, .95vw, 18px); }
+.sos-realizado-meta > strong { font-size: clamp(16px, 1.25vw, 24px); color: #162b46; font-weight: 800; }
+.sos-realizado-meta > span { color: #60738a; }
+.producao-vermelho .sos-realizado-meta > strong,
+.sos-dia-resumo.producao-vermelho b { color: #bb2525; }
+.producao-verde .sos-realizado-meta > strong,
+.sos-dia-resumo.producao-verde b { color: #08704a; }
+.sos-produtividade { color: var(--sos-cor); font-size: clamp(15px, 1.1vw, 22px); font-weight: 800; }
+.sos-barra { height: 6px; border-radius: 4px; background: #e6edf5; margin-top: 7px; overflow: hidden; }
+.sos-barra > span { display: block; height: 100%; background: var(--sos-cor); }
+.sos-refugo { border-top: 1px solid #e7edf5; padding: 8px 10px; }
+.sos-refugo-valores { display: flex; align-items: baseline; gap: 6px; margin-top: 3px; white-space: nowrap; }
+.sos-refugo-valores strong { font-size: 18px; color: #526783; font-weight: 800; }
+.refugo-verde .sos-refugo-valores strong { color: #08704a; }
+.refugo-vermelho .sos-refugo-valores strong { color: #bb2525; }
+.sos-refugo-valores > span { color: #526783; font-size: 12px; }
+.sos-refugo-partes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 0 10px 10px; }
+.sos-refugo-partes > div { display: flex; justify-content: space-between; align-items: baseline; gap: 4px; background: #f1f4f9; border: 1px solid #e0e7f0; border-radius: 5px; padding: 6px; font-size: 11px; color: #526783; white-space: nowrap; }
+.sos-refugo-partes strong { color: #344d6c; font-size: 12px; }
+.sos-quadro-rodape { display: flex; justify-content: space-between; gap: 15px; margin-top: 12px; color: #526783; font-size: 11px; }
+.sos-quadro-rodape details { max-width: 55%; }
+.sos-quadro:fullscreen { --sos-unidade: min(1vw, 1.6vh); box-sizing: border-box; width: 100vw; height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; border: none; border-radius: 0; margin: 0; padding: 1vh 1vw; display: flex; flex-direction: column; }
+.sos-quadro:fullscreen .sos-quadro-cabecalho,
+.sos-quadro:fullscreen .sos-legenda { display: none; }
+.sos-quadro:fullscreen .sos-semana-grid { flex: 1; min-height: 0; }
+.sos-quadro:fullscreen .sos-dia { min-height: 0; display: grid; grid-template-rows: auto auto repeat(4, minmax(0, 1fr)); gap: .65vh; padding: 0 .4vw .65vh; }
+.sos-quadro:fullscreen .sos-dia-cabecalho { padding: .8vh .5vw; margin: -2px calc(-.4vw - 2px) 0; }
+.sos-quadro:fullscreen .sos-dia-cabecalho strong { font-size: calc(var(--sos-unidade) * 1.5); }
+.sos-quadro:fullscreen .sos-dia-cabecalho span { font-size: calc(var(--sos-unidade) * 1.1); }
+.sos-quadro:fullscreen .sos-dia-cabecalho small { font-size: calc(var(--sos-unidade) * .65); margin-top: .3vh; }
+.sos-quadro:fullscreen .sos-dia-resumo { padding: .2vh .2vw; gap: .25vh; }
+.sos-quadro:fullscreen .sos-maquina { min-height: 0; display: grid; grid-template-rows: auto 1fr auto auto; line-height: 1.15; }
+.sos-quadro:fullscreen .sos-maquina-topo { padding: .55vh .5vw; }
+.sos-quadro:fullscreen .sos-maquina-topo > strong { font-size: calc(var(--sos-unidade) * 1.2); }
+.sos-quadro:fullscreen .sos-status { font-size: calc(var(--sos-unidade) * .6); padding: .3vh .3vw; }
+.sos-quadro:fullscreen .sos-producao { padding: .65vh .5vw .55vh; display: flex; flex-direction: column; justify-content: center; }
+.sos-quadro:fullscreen .sos-rotulo,
+.sos-quadro:fullscreen .sos-dia-resumo { font-size: calc(var(--sos-unidade) * .8); }
+.sos-quadro:fullscreen .sos-producao-valores { margin-top: .3vh; }
+.sos-quadro:fullscreen .sos-realizado-meta { font-size: calc(var(--sos-unidade) * .95); }
+.sos-quadro:fullscreen .sos-realizado-meta > strong { font-size: calc(var(--sos-unidade) * 1.35); }
+.sos-quadro:fullscreen .sos-produtividade { font-size: calc(var(--sos-unidade) * 1.15); }
+.sos-quadro:fullscreen .sos-barra { height: .5vh; min-height: .5vh; margin-top: .55vh; }
+.sos-quadro:fullscreen .sos-refugo { padding: .55vh .5vw; }
+.sos-quadro:fullscreen .sos-refugo-valores { margin-top: .3vh; }
+.sos-quadro:fullscreen .sos-refugo-valores > strong { font-size: calc(var(--sos-unidade) * 1.2); }
+.sos-quadro:fullscreen .sos-refugo-valores > span { font-size: calc(var(--sos-unidade) * .85); }
+.sos-quadro:fullscreen .sos-refugo-partes { padding: 0 .5vw .6vh; gap: .4vw; }
+.sos-quadro:fullscreen .sos-refugo-partes > div { padding: .5vh .3vw; font-size: calc(var(--sos-unidade) * .75); }
+.sos-quadro:fullscreen .sos-refugo-partes strong { font-size: calc(var(--sos-unidade) * .85); }
+.sos-quadro:fullscreen .sos-quadro-rodape { display: none; }
+@media (max-width: 1050px) {
+  .sos-semana-grid { grid-template-columns: repeat(5, minmax(205px, 1fr)); overflow-x: auto; padding: 4px; }
+  .sos-quadro-cabecalho { flex-wrap: wrap; }
+}
+@media (max-width: 600px) {
+  .sos-semana-grid { grid-template-columns: 1fr; overflow: visible; }
+  .sos-quadro-rodape { flex-direction: column; }
+  .sos-quadro-rodape details { max-width: 100%; }
+}
+
+/* Em tela cheia a grade sempre mantém os cinco dias, independente do breakpoint. */
+.sos-quadro:fullscreen .sos-semana-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); overflow: visible; padding: 0; gap: 1vw; }

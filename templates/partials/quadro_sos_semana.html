@@ -1,0 +1,74 @@
+<div class="sos-quadro-cabecalho">
+  <div>
+    <span class="sos-sobrelinha">PRODUÇÃO · ACOMPANHAMENTO DIÁRIO</span>
+    <h3>Semana das SOS</h3>
+    <p>{{ semana_sos.inicio }} a {{ semana_sos.fim }} · Segunda a sexta</p>
+  </div>
+  <div class="sos-quadro-acoes">
+    <form method="post" action="{{ url_for('main.salvar_meta_refugo_sos') }}" class="sos-meta-refugo-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="mes" value="{{ mes_selecionado }}">
+      <input type="hidden" name="data" value="{{ data_selecionada }}">
+      <label for="sos-meta-refugo">Meta de Refugo (%)</label>
+      <div class="sos-meta-refugo-campos">
+        <input id="sos-meta-refugo" name="meta_refugo" type="text" inputmode="decimal" value="{{ semana_sos.meta_refugo }}" placeholder="Ex.: 5" aria-describedby="sos-meta-refugo-ajuda">
+        <button type="submit" class="btn">Salvar</button>
+      </div>
+      <small id="sos-meta-refugo-ajuda">Válida para todas as SOS. Vazio remove a meta.</small>
+    </form>
+    <button type="button" class="btn sos-tela-cheia" onclick="alternarTelaCheiaSOS()">⛶ Tela cheia</button>
+  </div>
+</div>
+<div class="sos-legenda">
+  <span><i class="vermelho"></i> Vermelho: produção abaixo da meta</span>
+  <span><i class="verde"></i> Verde: meta atingida (100% ou mais)</span>
+  <span>Refugos em kg · PI = Refugo Impressora</span>
+  <span>Refugo Total: {{ 'verde abaixo de ' ~ semana_sos.meta_refugo ~ '%; vermelho igual ou acima' if semana_sos.meta_refugo else 'defina a meta para acompanhar as cores' }}.</span>
+</div>
+<div class="sos-semana-grid">
+  {% for dia in semana_sos.dias %}
+  <section class="sos-dia {{ 'dia-hoje' if dia.hoje else '' }} {{ 'dia-futuro' if dia.futuro else '' }}" aria-label="{{ dia.nome }} {{ dia.data }}">
+    <header class="sos-dia-cabecalho">
+      <div><strong>{{ dia.nome }}</strong><span>{{ dia.data }}</span></div>
+      <small>{{ 'HOJE' if dia.hoje else ('A SEGUIR' if dia.futuro else 'SEMANA ATUAL') }}</small>
+    </header>
+    <div class="sos-dia-resumo producao-{{ dia.resumo.cor_producao }}">
+      <span>Produção do dia <b>{{ dia.resumo.producao }}</b></span>
+      <span>Atingimento <b>{{ dia.resumo.produtividade }}</b></span>
+    </div>
+    {% for r in dia.maquinas %}
+    <article class="sos-maquina {{ 'sem-dados' if not r.tem_dados else '' }} {{ 'meta-ok' if r.atingida else '' }} producao-{{ r.cor_producao }}">
+      <div class="sos-maquina-topo">
+        <strong>{{ r.sos }}</strong>
+        <span class="sos-status">{{ 'Meta atingida' if r.atingida else ('Abaixo da meta' if r.cor_producao == 'vermelho' else ('Sem meta' if r.tem_dados else 'Sem lançamento')) }}</span>
+      </div>
+      <div class="sos-producao">
+        <span class="sos-rotulo">Produção</span>
+        <div class="sos-producao-valores">
+          <span class="sos-realizado-meta" aria-label="Produção {{ r.producao }}, meta {{ r.meta }}"><strong>{{ r.producao }}</strong><span> / {{ r.meta }}</span></span>
+          <strong class="sos-produtividade" title="Produção ÷ Meta × 100">{{ r.produtividade }}</strong>
+        </div>
+        <div class="sos-barra" role="img" aria-label="Atingimento {{ r.produtividade }}"><span style="width: {{ '%.2f'|format(r.barra) }}%"></span></div>
+      </div>
+      <div class="sos-refugo refugo-{{ r.cor_refugo }}" title="{{ 'Meta: menor que ' ~ semana_sos.meta_refugo ~ '%' if semana_sos.meta_refugo else 'Meta de refugo não definida' }}">
+        <span class="sos-rotulo">Refugo Total (Dia){% if semana_sos.meta_refugo %} · Meta &lt; {{ semana_sos.meta_refugo }}%{% endif %}</span>
+        <div class="sos-refugo-valores"><strong>{{ r.refugo_total_pct }}</strong><span>({{ r.refugo }} kg)</span></div>
+      </div>
+      <div class="sos-refugo-partes">
+        <div title="Refugo Impressora"><span>PI</span><strong>{{ r.refugo_pi_pct }}</strong></div>
+        <div title="Refugo SOS"><span>SOS</span><strong>{{ r.refugo_sos_pct }}</strong></div>
+      </div>
+    </article>
+    {% endfor %}
+  </section>
+  {% endfor %}
+</div>
+<div class="sos-quadro-rodape">
+  <span>Mesmas posições todos os dias: SOS 1 → SOS 4. Atualiza automaticamente.</span>
+  <details><summary>Como calculamos</summary>
+    <p>Lançamentos da mesma data e SOS são somados. Produtividade = Produção ÷ Meta × 100. Refugo = Impressora + SOS.</p>
+    <p>PI (%) = Refugo Impressora ÷ (Peso Diário + Refugo Impressora) × 100. SOS (%) usa Refugo SOS na mesma fórmula. Total (%) usa a soma dos refugos. Peso Diário é somente produção boa.</p>
+    <p>Produção e atingimento: vermelho abaixo de 100%, verde a partir de 100%. Refugo Total: verde abaixo da meta de refugo; vermelho igual ou acima. A comparação usa os valores sem arredondamento. PI e SOS não mudam de cor.</p>
+    <p>“—” indica falta de informação ou denominador zero. Totais antigos sem divisão são preservados. Um componente não informado conta como zero apenas quando o outro foi preenchido. O quadro usa a semana atual de São Paulo, independente dos filtros acima.</p>
+  </details>
+</div>

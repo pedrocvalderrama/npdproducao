@@ -12,6 +12,18 @@
   .diario-numeros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 12px; }
   .diario-textos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
   .diario-acoes { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .maquina-diario { padding: 0; overflow: hidden; }
+  .maquina-diario summary { cursor: pointer; padding: 18px; font-size: 18px; font-weight: 700; color: #234e79; background: #edf3fa; }
+  .maquina-diario[open] { padding: 0 18px 18px; }
+  .maquina-diario[open] summary { margin: 0 -18px 18px; border-bottom: 1px solid #d6e2ef; }
+  .producao-diario { display: grid; grid-template-columns: 110px repeat(var(--campos), minmax(0, 1fr)); align-items: end; gap: 12px; padding: 12px; border: 1px solid #dbe3ed; border-radius: 7px; margin-bottom: 10px; background: white; }
+  .producao-diario[hidden] { display: none; }
+  .producao-numero { align-self: center; color: #335c86; font-size: 13px; }
+  .peso-producao { grid-column: 1 / -1; color: #526783; }
+  .diario-adicionar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 14px 0; }
+  .diario-totais { display: flex; flex-wrap: wrap; gap: 15px 30px; padding: 16px; margin-bottom: 18px; background: #e7f1fc; border-radius: 8px; }
+  .diario-totais strong { margin-left: 8px; }
+  @media (max-width: 1000px) { .producao-diario { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row; } .producao-numero { grid-column: 1 / -1; } }
   @media (max-width: 800px) { .diario-numeros, .diario-textos { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
@@ -19,64 +31,75 @@
 {% block content %}
 <div class="card">
   <h1>Lançamento Diário</h1>
-  <p class="diario-intro">Preencha somente os equipamentos que tiveram lançamento. Estes dados ficam em uma tabela separada e não entram em nenhum cálculo das outras telas.</p>
-  <form action="{{ url_for('main.lancamento_diario') }}" method="post">
+  <p class="diario-intro">Abra a máquina e informe cada produção. Os totais do dia são calculados automaticamente. Peso em kg, com vírgula ou ponto.</p>
+  <form id="form-diario" action="{{ url_for('main.editar_lancamento_diario', id=editando) if editando else url_for('main.lancamento_diario') }}" method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="diario-bloco diario-data-geral">
-      <h3>Data de todos os lançamentos</h3>
-      <div class="diario-numeros">
-        <div class="form-group">
-          <label class="form-label" for="data_todos">Alterar todas as datas para</label>
-          <input type="date" lang="pt-BR" class="form-input" id="data_todos" value="{{ hoje }}">
-        </div>
-      </div>
-      <p class="diario-intro">Ao mudar esta data, a data de todos os equipamentos abaixo é trocada. Depois, cada um ainda pode ser ajustado individualmente.</p>
-    </div>
     {% for prefixo, equipamento, titulo, tem_alcas in equipamentos %}
-    <div class="diario-bloco">
-      <h3>{{ titulo }}</h3>
-      <div class="diario-numeros">
+    {% set eh_sos = equipamento in ['SOS 1', 'SOS 2', 'SOS 3', 'SOS 4'] %}
+    {% set tem_peso = equipamento not in ['IMPRESSORA', 'ROBO'] %}
+    <details class="diario-bloco maquina-diario" data-prefixo="{{ prefixo }}" {{ 'open' if abertos.get(prefixo) or editando else '' }}>
+      <summary>{{ titulo }}</summary>
+      <input type="hidden" name="{{ prefixo }}_usa_producoes" value="1">
+      <div class="diario-numeros diario-cabecalho">
         <div class="form-group">
-          <label class="form-label" for="{{ prefixo }}_quantidade">{{ 'Quantidade Sacolas' if tem_alcas else 'Quantidade' }}</label>
-          <input type="number" min="0" step="1" inputmode="numeric" class="form-input" id="{{ prefixo }}_quantidade" name="{{ prefixo }}_quantidade" value="{{ valores.get(prefixo ~ '_quantidade', '') }}">
+          <label class="form-label" for="{{ prefixo }}_data">Data</label>
+          <input type="date" lang="pt-BR" class="form-input" id="{{ prefixo }}_data" name="{{ prefixo }}_data" value="{{ valores.get(prefixo ~ '_data') or hoje }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ prefixo }}_meta_diaria">Meta Diária</label>
+          <input type="number" min="0" step="1" class="form-input" id="{{ prefixo }}_meta_diaria" name="{{ prefixo }}_meta_diaria" value="{{ valores.get(prefixo ~ '_meta_diaria', '') }}">
         </div>
         {% if tem_alcas %}
         <div class="form-group">
-          <label class="form-label" for="{{ prefixo }}_quantidade_alcas">Quantidade Alças</label>
-          <input type="number" min="0" step="1" inputmode="numeric" class="form-input" id="{{ prefixo }}_quantidade_alcas" name="{{ prefixo }}_quantidade_alcas" value="{{ valores.get(prefixo ~ '_quantidade_alcas', '') }}">
+          <label class="form-label" for="{{ prefixo }}_quantidade_alcas">Quantidade de Alças (dia)</label>
+          <input type="number" min="0" step="1" inputmode="numeric" class="form-input" id="{{ prefixo }}_quantidade_alcas" name="{{ prefixo }}_quantidade_alcas" data-alcas-dia value="{{ valores.get(prefixo ~ '_quantidade_alcas', '') }}">
         </div>
         {% endif %}
-        <div class="form-group">
-          <label class="form-label" for="{{ prefixo }}_meta_diaria">Meta Diária</label>
-          <input type="number" min="0" step="1" inputmode="numeric" class="form-input" id="{{ prefixo }}_meta_diaria" name="{{ prefixo }}_meta_diaria" value="{{ valores.get(prefixo ~ '_meta_diaria', '') }}">
+      </div>
+      <div class="diario-producoes">
+        {% for numero in range(1, 11) %}
+        {% set chave = prefixo ~ '_p' ~ numero ~ '_' %}
+        <div class="producao-diario" style="--campos: {{ 4 if eh_sos else (3 if tem_peso else 2) }}" data-ordem="{{ numero }}" {{ 'hidden' if numero > visiveis.get(prefixo, 1) else '' }}>
+          <strong class="producao-numero">Produção {{ numero }}</strong>
+          {% set campos = [('quantidade', 'Quantidade Sacolas' if tem_alcas else 'Quantidade', true)] %}
+          {% if tem_peso %}{% set campos = campos + [('milheiro' if eh_sos else 'peso_diario', 'Milheiro (kg)' if eh_sos else 'Peso (kg)', false)] %}{% endif %}
+          {% if eh_sos %}
+          {% set campos = campos + [('refugo_impressora', 'Refugo Impressora (kg)', false), ('refugo_sos', 'Refugo SOS (kg)', false)] %}
+          {% else %}{% set campos = campos + [('refugo_diario', 'Refugo', false)] %}{% endif %}
+          {% for campo, rotulo, inteiro in campos %}
+          <div class="form-group">
+            <label class="form-label" for="{{ chave }}{{ campo }}">{{ rotulo }}</label>
+            <input type="{{ 'number' if inteiro else 'text' }}" {% if inteiro %}min="0" step="1"{% endif %} inputmode="{{ 'numeric' if inteiro else 'decimal' }}" class="form-input" id="{{ chave }}{{ campo }}" name="{{ chave }}{{ campo }}" data-campo="{{ campo }}" value="{{ valores.get(chave ~ campo, '') }}">
+          </div>
+          {% endfor %}
+          {% if eh_sos %}
+          <small class="peso-producao">Peso calculado: <strong data-peso-producao data-peso-legado="{{ valores.get(chave ~ 'peso_diario', '') if not valores.get(chave ~ 'milheiro', '') else '' }}">—</strong> kg · Quantidade ÷ 1.000 × Milheiro</small>
+          {% endif %}
         </div>
-        <div class="form-group">
-          <label class="form-label" for="{{ prefixo }}_refugo_diario">Refugo Diário</label>
-          <input type="number" min="0" step="1" inputmode="numeric" class="form-input" id="{{ prefixo }}_refugo_diario" name="{{ prefixo }}_refugo_diario" value="{{ valores.get(prefixo ~ '_refugo_diario', '') }}">
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="{{ prefixo }}_data">Data</label>
-          <input type="date" lang="pt-BR" class="form-input data-equipamento" id="{{ prefixo }}_data" name="{{ prefixo }}_data" value="{{ valores.get(prefixo ~ '_data') or hoje }}">
-        </div>
+        {% endfor %}
+      </div>
+      <div class="diario-adicionar">
+        <span class="contador-producoes">{{ visiveis.get(prefixo, 1) }} de 10 espaços</span>
+        <button type="button" class="btn btn-secondary adicionar-producao" {{ 'disabled' if visiveis.get(prefixo, 1) >= 10 else '' }}>+ Adicionar produção</button>
+      </div>
+      <div class="diario-totais" aria-live="polite">
+        <span>Quantidade diária <strong data-total="quantidade">0</strong></span>
+        {% if tem_alcas %}<span>Alças diárias <strong data-total="quantidade_alcas">0</strong></span>{% endif %}
+        {% if tem_peso %}<span>Peso diário <strong data-total="peso_diario">0</strong> kg</span>{% endif %}
+        <span>Refugo diário <strong data-total="refugo_diario">0</strong></span>
       </div>
       <div class="diario-textos">
+        {% for campo, rotulo in [('problemas', 'Problemas'), ('solucoes', 'Soluções'), ('observacao', 'Observação')] %}
         <div class="form-group">
-          <label class="form-label" for="{{ prefixo }}_problemas">Problemas</label>
-          <textarea class="form-textarea" rows="3" id="{{ prefixo }}_problemas" name="{{ prefixo }}_problemas">{{ valores.get(prefixo ~ '_problemas', '') }}</textarea>
+          <label class="form-label" for="{{ prefixo }}_{{ campo }}">{{ rotulo }}</label>
+          <textarea class="form-textarea" rows="3" id="{{ prefixo }}_{{ campo }}" name="{{ prefixo }}_{{ campo }}">{{ valores.get(prefixo ~ '_' ~ campo, '') }}</textarea>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="{{ prefixo }}_solucoes">Soluções</label>
-          <textarea class="form-textarea" rows="3" id="{{ prefixo }}_solucoes" name="{{ prefixo }}_solucoes">{{ valores.get(prefixo ~ '_solucoes', '') }}</textarea>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="{{ prefixo }}_observacao">Observação</label>
-          <textarea class="form-textarea" rows="3" id="{{ prefixo }}_observacao" name="{{ prefixo }}_observacao">{{ valores.get(prefixo ~ '_observacao', '') }}</textarea>
-        </div>
+        {% endfor %}
       </div>
-    </div>
+    </details>
     {% endfor %}
     <div class="diario-acoes">
-      <button type="submit" class="btn">SALVAR LANÇAMENTO DIÁRIO</button>
+      <button type="submit" class="btn">{{ 'SALVAR ALTERAÇÕES' if editando else 'SALVAR LANÇAMENTO DIÁRIO' }}</button>
       <a href="{{ url_for('main.historico_diario') }}" class="btn btn-secondary" style="background:#6c757d;">Ver Histórico Diário</a>
     </div>
   </form>
@@ -84,13 +107,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-  document.getElementById('data_todos').addEventListener('change', function() {
-    if (!this.value) return;
-    const novaData = this.value;
-    document.querySelectorAll('.data-equipamento').forEach(function(campo) {
-      campo.value = novaData;
-    });
-  });
-</script>
+<script src="{{ url_for('static', filename='js/lancamento_diario.js') }}"></script>
 {% endblock %}

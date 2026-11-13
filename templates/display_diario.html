@@ -4,6 +4,7 @@
 
 {% block head_extra %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/analise.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/quadro_sos.css') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -586,6 +587,9 @@
         </div>
         <div class="painel-rodape">Atualizado às <span id="painel-hora"></span> · atualiza sozinho a cada lançamento</div>
       </div>
+      <div class="card sos-quadro" id="indicadores-sos">
+        {% include 'partials/quadro_sos_semana.html' %}
+      </div>
     </div>
 {% endblock %}
 
@@ -611,6 +615,13 @@
     function marcarHora() {
       document.getElementById('painel-hora').textContent =
         new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function alternarTelaCheiaSOS() {
+      const quadro = document.getElementById('indicadores-sos');
+      const operacao = document.fullscreenElement === quadro
+        ? document.exitFullscreen() : quadro.requestFullscreen();
+      if (operacao) operacao.catch(function(erro) { console.error('Tela cheia SOS:', erro); });
     }
 
     function emTelaCheia() {
@@ -755,7 +766,17 @@
       fetch(window.location.href, { cache: 'no-store' })
         .then(function(resp) { return resp.ok ? resp.text() : Promise.reject(resp.status); })
         .then(function(html) {
-          const novo = new DOMParser().parseFromString(html, 'text/html').getElementById('painel-conteudo');
+          const documento = new DOMParser().parseFromString(html, 'text/html');
+          const novo = documento.getElementById('painel-conteudo');
+          const tabelaSOS = documento.getElementById('indicadores-sos');
+          const campoMetaRefugo = document.getElementById('sos-meta-refugo');
+          const editandoMetaRefugo = campoMetaRefugo && (
+            campoMetaRefugo.value !== campoMetaRefugo.defaultValue ||
+            campoMetaRefugo.closest('form').contains(document.activeElement)
+          );
+          if (tabelaSOS && !editandoMetaRefugo) {
+            document.getElementById('indicadores-sos').innerHTML = tabelaSOS.innerHTML;
+          }
           if (novo) {
             document.getElementById('painel-conteudo').innerHTML = novo.innerHTML;
             if (modoExibicao === 'slide' && emTelaCheia()) {
@@ -794,6 +815,7 @@
     marcarHora();
     verificarVersaoPainel();
     setInterval(verificarVersaoPainel, INTERVALO_VERSAO_MS);
+    setInterval(atualizarPainel, 60 * 1000);
   </script>
   <script>
     function toggleMetas() {
